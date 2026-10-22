@@ -7,7 +7,8 @@ export const THEMES = [
     primary: '#004AAB',
     gradFrom: '#1F63C4',
     gradTo: '#003D8C',
-    soft: 'rgba(0, 74, 171, 0.08)'
+    soft: 'rgba(0, 74, 171, 0.08)',
+    tint: 'rgba(0, 74, 171, 0.14)'
   },
   {
     id: 'teal',
@@ -15,7 +16,8 @@ export const THEMES = [
     primary: '#0F766E',
     gradFrom: '#0D9488',
     gradTo: '#0F766E',
-    soft: 'rgba(15, 118, 110, 0.08)'
+    soft: 'rgba(15, 118, 110, 0.08)',
+    tint: 'rgba(15, 118, 110, 0.14)'
   },
   {
     id: 'purple',
@@ -23,7 +25,8 @@ export const THEMES = [
     primary: '#6D28D9',
     gradFrom: '#8B5CF6',
     gradTo: '#6D28D9',
-    soft: 'rgba(109, 40, 217, 0.08)'
+    soft: 'rgba(109, 40, 217, 0.08)',
+    tint: 'rgba(109, 40, 217, 0.14)'
   },
   {
     id: 'orange',
@@ -31,7 +34,8 @@ export const THEMES = [
     primary: '#EA580C',
     gradFrom: '#F97316',
     gradTo: '#EA580C',
-    soft: 'rgba(234, 88, 12, 0.08)'
+    soft: 'rgba(234, 88, 12, 0.08)',
+    tint: 'rgba(234, 88, 12, 0.14)'
   },
   {
     id: 'rose',
@@ -39,7 +43,8 @@ export const THEMES = [
     primary: '#BE123C',
     gradFrom: '#F43F5E',
     gradTo: '#BE123C',
-    soft: 'rgba(190, 18, 60, 0.08)'
+    soft: 'rgba(190, 18, 60, 0.08)',
+    tint: 'rgba(190, 18, 60, 0.14)'
   }
 ]
 
@@ -71,7 +76,14 @@ export function themeVars(theme) {
     '--brand': theme.primary,
     '--brand-grad-from': theme.gradFrom,
     '--brand-grad-to': theme.gradTo,
-    '--brand-soft': theme.soft
+    '--brand-soft': theme.soft,
+    '--brand-tint': theme.tint,
+    '--ink': '#172033',
+    '--muted': '#7c879d',
+    '--line': '#e9edf6',
+    '--page-bg': '#f4f6fb',
+    '--shadow-card': '0 12rpx 30rpx rgba(23, 32, 51, 0.06)',
+    '--shadow-float': '0 10rpx 24rpx rgba(23, 32, 51, 0.10)'
   }
 }
 

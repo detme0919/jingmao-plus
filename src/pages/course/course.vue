@@ -1,13 +1,13 @@
 <template>
   <view class="page" :style="pageStyle">
-    <!-- 顶部头部（自绘，替代系统导航栏） -->
     <view class="topbar">
+      <view class="topbar-kicker">SCHEDULE</view>
       <view class="topbar-title">课程表</view>
-      <view class="topbar-sub">{{ selection ? (table.className || selection.className) : '班级课表' }}</view>
+      <view class="topbar-sub">{{ headerSub }}</view>
     </view>
 
-    <!-- 未绑定 -->
     <view v-if="!selection && !auth" class="bind-card">
+      <view class="bind-icon">📚</view>
       <view class="bind-title">选择班级导入课表</view>
       <view class="bind-desc">
         选择你所在的院系和班级，导入后课表保存在本机，之后打开课程表自动加载。
@@ -17,12 +17,23 @@
     </view>
 
     <block v-else>
-      <!-- 周次选择 -->
-      <view class="week-row">
-        <picker :range="weekOptions" :value="weekIndex" @change="onWeek">
-          <view class="week-picker">{{ weekOptions[weekIndex] }} ▾</view>
-        </picker>
+      <view class="week-bar">
+        <view class="week-nav">
+          <view class="week-arrow" :class="{ 'is-disabled': weekIndex === 0 }" @tap="stepWeek(-1)">‹</view>
+          <picker :range="weekOptions" :value="weekIndex" @change="onWeek">
+            <view class="week-current">
+              {{ weekOptions[weekIndex] }}
+              <text class="week-caret">⌄</text>
+            </view>
+          </picker>
+          <view
+            class="week-arrow"
+            :class="{ 'is-disabled': weekIndex >= weeksTotal }"
+            @tap="stepWeek(1)"
+          >›</view>
+        </view>
         <view class="week-actions">
+          <view class="week-today" @tap="goCurrentWeek">本周</view>
           <view class="week-update" @tap="load">刷新</view>
           <view class="week-manage" @tap="openManage">管理</view>
         </view>
@@ -34,41 +45,68 @@
         {{ error }}
         <text class="retry" @tap="load">重试</text>
       </view>
-      <view v-else-if="!hasAnyCourse" class="tip">
-        {{ weekIndex ? '本周暂无课程，可切换其他周次' : '暂无课程数据' }}
+      <view v-else-if="!hasAnyCourse" class="empty-card">
+        <view class="empty-icon">🗓️</view>
+        <view class="empty-title">{{ weekIndex ? '本周暂无课程' : '暂无课程数据' }}</view>
+        <view class="empty-desc">可以切换其他周次，或在「管理」中重新选择班级。</view>
       </view>
 
       <block v-else>
-        <view v-for="day in displayDays" :key="day.label" class="day-card">
-          <view class="day-head">
-            <text class="day-name">{{ day.label }}</text>
-            <text v-if="day.courses.length" class="day-count">{{ day.courses.length }} 门</text>
-          </view>
-          <view v-if="!day.courses.length" class="empty-day">无课</view>
-          <view v-for="(c, i) in day.courses" :key="i" class="course-row" @tap="onCourseTap(c)">
-            <view class="period">{{ c.period }}</view>
-            <view class="course-body">
-              <view class="course-name">{{ c.name }}<text v-if="c.manual" class="manual-tag">手动</text></view>
-              <view v-if="classTime(c)" class="course-time">{{ classTime(c) }}</view>
-              <view v-if="c.room || c.teacher" class="course-meta">
-                <text v-if="c.room">{{ c.room }}</text>
-                <text v-if="c.teacher" class="teacher">{{ c.teacher }}</text>
+        <view class="grid-scroll">
+          <view class="timetable-card" :class="{ 'is-wide': gridDays.length > 5 }" :style="gridStyle">
+            <view class="grid-head">
+              <view class="time-col grid-corner">
+                <text class="corner-text">节次</text>
               </view>
-              <view v-if="!weekIndex && c.weeksText" class="course-weeks">{{ c.weeksText }}</view>
+              <view
+                v-for="day in gridDays"
+                :key="day.label"
+                class="day-head"
+                :class="{ 'is-today': day.isToday }"
+              >
+                <text class="day-name">{{ day.label }}</text>
+                <text v-if="day.isToday" class="day-today">今天</text>
+              </view>
+            </view>
+
+            <view
+              v-for="period in gridPeriods"
+              :key="period"
+              class="grid-row"
+              :class="{ 'is-current': isCurrentPeriod(period) }"
+            >
+              <view class="time-cell" :class="{ 'is-current': isCurrentPeriod(period) }">
+                <text class="time-period">{{ periodShort(period) }}</text>
+                <text class="time-start">{{ periodStart(period) }}</text>
+              </view>
+              <view
+                v-for="day in gridDays"
+                :key="day.label"
+                class="grid-cell"
+                :class="{ 'is-today': day.isToday }"
+              >
+                <view
+                  v-for="c in coursesAt(day, period)"
+                  :key="c.id || c.name + c.period"
+                  class="course-block"
+                  :style="blockStyle(c)"
+                  @tap="onCourseTap(c)"
+                >
+                  <text class="block-name">{{ c.name }}</text>
+                  <text v-if="c.room" class="block-room">{{ c.room }}</text>
+                </view>
+              </view>
             </view>
           </view>
         </view>
-        <view class="time-card">
-          <view class="time-title">上课时间</view>
-          <view v-for="t in periodTimes" :key="t.period" class="time-row">
-            <text class="time-period">{{ t.period }}</text>
-            <text class="time-value">{{ t.time }}</text>
-          </view>
-          <view class="time-note">3-4 节时间与楼栋有关：四、五号楼 10:10-11:50，一、二、三号楼 10:30-12:10。</view>
-        </view>
-        <view class="hint">课表来自学校公众号课表页面，如遇调课请以教务系统为准。</view>
-      </block>
 
+        <view class="grid-note">
+          <view class="note-dot"></view>
+          <text>3-4 节时间与楼栋有关：四、五号楼 10:10-11:50，一、二、三号楼 10:30-12:10</text>
+        </view>
+        <view v-if="gridDays.length > 5" class="scroll-hint">左右滑动可查看周末课程</view>
+        <view class="source-hint">课表来自学校公众号课表页面，如遇调课请以教务系统为准。</view>
+      </block>
     </block>
   </view>
 </template>
@@ -134,15 +172,23 @@ const PERIOD_TIMES = {
   '9-10节': '19:00-20:40'
 }
 
-const periodTimes = [
-  { period: '1-2节', time: '08:10-09:50' },
-  { period: '3-4节', time: '10:10-11:50（四、五号楼）\n10:30-12:10（一、二、三号楼）' },
-  { period: '5-6节', time: '14:40-16:20' },
-  { period: '7-8节', time: '16:40-18:20' },
-  { period: '9-10节', time: '19:00-20:40' }
-]
-
 const baseLabels = ['周一', '周二', '周三', '周四', '周五']
+const GRID_PERIODS = ['1-2节', '3-4节', '5-6节', '7-8节', '9-10节', '11-12节']
+const BLOCK_COLORS = [
+  { bg: 'rgba(0, 74, 171, 0.10)', border: 'rgba(0, 74, 171, 0.45)', text: '#0b3f8f' },
+  { bg: 'rgba(15, 118, 110, 0.10)', border: 'rgba(15, 118, 110, 0.45)', text: '#0c5d54' },
+  { bg: 'rgba(109, 40, 217, 0.10)', border: 'rgba(109, 40, 217, 0.45)', text: '#551fae' },
+  { bg: 'rgba(202, 138, 4, 0.12)', border: 'rgba(202, 138, 4, 0.5)', text: '#8a5b00' },
+  { bg: 'rgba(190, 18, 60, 0.10)', border: 'rgba(190, 18, 60, 0.42)', text: '#930f30' },
+  { bg: 'rgba(2, 132, 199, 0.10)', border: 'rgba(2, 132, 199, 0.45)', text: '#075e94' }
+]
+const colorMap = {}
+
+function colorIndex(name) {
+  const key = String(name || '').trim()
+  if (!colorMap[key]) colorMap[key] = Object.keys(colorMap).length % BLOCK_COLORS.length
+  return colorMap[key]
+}
 
 const displayDays = computed(() => {
   const map = {}
@@ -155,6 +201,7 @@ const displayDays = computed(() => {
     manualMap[m.day].push(Object.assign({ manual: true }, m))
   })
   const extraLabels = table.value.days
+    .filter((d) => d.courses && d.courses.length)
     .map((d) => d.label)
     .concat(manual.value.map((m) => m.day))
     .filter((l) => !baseLabels.includes(l))
@@ -171,6 +218,86 @@ const displayDays = computed(() => {
 const hasAnyCourse = computed(() =>
   displayDays.value.some((d) => d.courses.length > 0)
 )
+
+const headerSub = computed(() => {
+  const cls = selection.value ? (table.value.className || selection.value.className) : ''
+  const week = weekIndex.value ? ` · 第${weekIndex.value}周` : ''
+  return (cls || '班级课表') + week
+})
+
+const currentWeek = ref(0)
+
+const gridDays = computed(() => {
+  const today = new Date().getDay()
+  const todayIndex = today >= 1 && today <= 5 ? today - 1 : -1
+  return displayDays.value.map((d, i) => ({
+    label: d.label,
+    courses: d.courses,
+    isToday: weekIndex.value > 0 && weekIndex.value === currentWeek.value && i === todayIndex
+  }))
+})
+
+const gridPeriods = computed(() => {
+  const used = new Set()
+  displayDays.value.forEach((d) => d.courses.forEach((c) => used.add(c.period)))
+  const base = GRID_PERIODS.slice(0, 5)
+  const extras = [...used]
+    .filter((p) => p && !base.includes(p))
+    .sort((a, b) => periodNum(a) - periodNum(b))
+  return base.concat(extras)
+})
+
+const gridStyle = computed(() => {
+  const days = gridDays.value.length
+  // 超过五天（周末有课）时给每列保留可读宽度，横向滑动查看
+  if (days <= 5) return {}
+  return { minWidth: 68 + days * 104 + 16 + 'rpx' }
+})
+
+function coursesAt(day, period) {
+  return day.courses.filter((c) => c.period === period)
+}
+
+function periodShort(period) {
+  return String(period || '').replace('节', '')
+}
+
+function periodStart(period) {
+  const time = PERIOD_TIMES[period]
+  return time ? time.split('-')[0] : ''
+}
+
+const PERIOD_RANGE = { '1-2节': [8 * 60 + 10, 9 * 60 + 50], '3-4节': [10 * 60 + 10, 11 * 60 + 50], '5-6节': [14 * 60 + 40, 16 * 60 + 20], '7-8节': [16 * 60 + 40, 18 * 60 + 20], '9-10节': [19 * 60, 20 * 60 + 40], '11-12节': [20 * 60 + 50, 22 * 60 + 30] }
+
+function isCurrentPeriod(period) {
+  if (weekIndex.value === 0 || weekIndex.value !== currentWeek.value) return false
+  const day = new Date().getDay()
+  if (day < 1 || day > 5) return false
+  const range = PERIOD_RANGE[period]
+  if (!range) return false
+  const now = new Date()
+  const mins = now.getHours() * 60 + now.getMinutes()
+  return mins >= range[0] && mins <= range[1]
+}
+
+function blockStyle(course) {
+  const palette = BLOCK_COLORS[colorIndex(course.name)]
+  return {
+    background: palette.bg,
+    borderColor: palette.border,
+    color: palette.text
+  }
+}
+
+function stepWeek(delta) {
+  const next = weekIndex.value + delta
+  if (next < 0 || next > weeksTotal.value) return
+  weekIndex.value = next
+}
+
+function goCurrentWeek() {
+  weekIndex.value = currentWeek.value > 0 ? currentWeek.value : 0
+}
 
 onShow(() => {
   theme.value = getTheme()
@@ -199,9 +326,14 @@ onShow(() => {
       : cached.linkKey
         ? 'link:' + cached.linkKey
         : ''
-    if (cachedKey === key) {
+    if (cachedKey === key && Array.isArray(cached.days)) {
       table.value = cached
       tableKey = key
+      if (typeof cached.realWeek === 'number') {
+        currentWeek.value = cached.realWeek > 0 ? cached.realWeek : 0
+      } else if (typeof cached.currentWeek === 'number' && cached.currentWeek > 0) {
+        currentWeek.value = cached.currentWeek
+      }
       if (weekIndex.value === 0 && typeof cached.currentWeek === 'number') {
         weekIndex.value = cached.currentWeek
       }
@@ -257,7 +389,8 @@ async function load() {
     const cur = await fetchCurrentWeek()
     if (seq !== loadSeq) return
     weeksTotal.value = Math.max(20, cur.total || 20)
-    if (changed || weekIndex.value === 0) {
+    currentWeek.value = cur.week > 0 ? cur.week : 0
+    if (changed) {
       const weekHasCourse = data.days.some(
         (d) => coursesForWeek(d.courses, cur.week).length > 0
       )
@@ -265,7 +398,8 @@ async function load() {
     }
     saveCourseCache(
       Object.assign(sel ? { classValue: sel.classValue } : { linkKey: authSnap.wxid }, data, {
-        currentWeek: weekIndex.value
+        currentWeek: weekIndex.value,
+        realWeek: currentWeek.value
       })
     )
   } catch (e) {
@@ -275,20 +409,6 @@ async function load() {
   } finally {
     if (seq === loadSeq) loading.value = false
   }
-}
-
-function classTime(course) {
-  const period = course.period
-  if (period === '3-4节') {
-    const m = String(course.room || '').match(/^\s*(\d)/)
-    if (m) {
-      const building = Number(m[1])
-      if (building === 4 || building === 5) return '10:10-11:50'
-      if (building >= 1 && building <= 3) return '10:30-12:10'
-    }
-    return '10:10-11:50 / 10:30-12:10'
-  }
-  return PERIOD_TIMES[period] || ''
 }
 
 function periodNum(period) {
@@ -312,18 +432,33 @@ function openManage() {
 }
 
 function onCourseTap(course) {
-  if (!course.manual) return
-  uni.showModal({
-    title: '手动课程',
-    content: '删除「' + course.name + '」？',
-    confirmText: '删除',
-    confirmColor: '#dc2626',
-    success: (r) => {
-      if (r.confirm) {
-        manual.value = removeManualCourse(course.id)
-        uni.showToast({ title: '已删除', icon: 'none' })
+  if (course.manual) {
+    uni.showModal({
+      title: '手动课程',
+      content: '删除「' + course.name + '」？',
+      confirmText: '删除',
+      confirmColor: '#dc2626',
+      success: (r) => {
+        if (r.confirm) {
+          manual.value = removeManualCourse(course.id)
+          uni.showToast({ title: '已删除', icon: 'none' })
+        }
       }
-    }
+    })
+    return
+  }
+  const lines = []
+  if (course.period) lines.push('节次：' + course.period)
+  if (course.room) lines.push('地点：' + course.room)
+  if (course.teacher) lines.push('教师：' + course.teacher)
+  if (course.weeksText) {
+    lines.push('周次：' + course.weeksText.replace(/周/g, '') + '周')
+  }
+  uni.showModal({
+    title: course.name,
+    content: lines.join('\n') || '暂无更多课程信息',
+    showCancel: false,
+    confirmText: '知道了'
   })
 }
 
@@ -377,84 +512,159 @@ async function importFromLink() {
 <style>
 .page {
   min-height: 100vh;
-  padding-bottom: 40rpx;
+  padding-bottom: 48rpx;
 }
 
 .topbar {
-  padding: calc(var(--status-bar-height) + 28rpx) 40rpx 40rpx;
-  background: linear-gradient(135deg, var(--brand-grad-from) 0%, var(--brand-grad-to) 100%);
+  position: relative;
+  overflow: hidden;
+  padding: calc(var(--status-bar-height) + 26rpx) 36rpx 40rpx;
   color: #ffffff;
+  background: linear-gradient(140deg, var(--brand-grad-from) 0%, var(--brand-grad-to) 100%);
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  width: 280rpx;
+  height: 280rpx;
+  top: -130rpx;
+  right: -90rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.topbar-kicker {
+  position: relative;
+  font-size: 20rpx;
+  letter-spacing: 3rpx;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .topbar-title {
+  position: relative;
+  margin-top: 10rpx;
   font-size: 44rpx;
   font-weight: 700;
   letter-spacing: 1rpx;
 }
 
 .topbar-sub {
+  position: relative;
   margin-top: 8rpx;
-  font-size: 24rpx;
-  opacity: 0.82;
+  font-size: 23rpx;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .bind-card {
-  margin: 32rpx 24rpx 0;
-  padding: 40rpx 32rpx;
-  background: #ffffff;
-  border-radius: 20rpx;
+  margin: 28rpx 24rpx 0;
+  padding: 40rpx 30rpx;
   text-align: center;
+  background: #ffffff;
+  border: 1rpx solid rgba(233, 237, 246, 0.9);
+  border-radius: 28rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.bind-icon {
+  width: 100rpx;
+  height: 100rpx;
+  margin: 0 auto 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 46rpx;
+  background: linear-gradient(150deg, #ffffff 0%, var(--brand-soft) 100%);
+  border: 1rpx solid var(--line);
+  border-radius: 28rpx;
 }
 
 .bind-title {
   font-size: 32rpx;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .bind-desc {
-  margin-top: 14rpx;
-  margin-bottom: 8rpx;
+  margin-top: 12rpx;
   font-size: 24rpx;
-  color: #6b7280;
   line-height: 1.7;
+  color: var(--muted);
 }
 
 .btn {
-  height: 92rpx;
+  height: 96rpx;
   margin-top: 28rpx;
-  border-radius: 46rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--brand);
   color: #ffffff;
+  background: linear-gradient(135deg, var(--brand-grad-from) 0%, var(--brand-grad-to) 100%);
+  border-radius: 18rpx;
   font-size: 30rpx;
   font-weight: 600;
+  box-shadow: 0 12rpx 24rpx rgba(23, 32, 51, 0.12);
 }
 
 .btn--ghost {
-  margin-top: 18rpx;
-  background: #ffffff;
+  margin-top: 16rpx;
   color: var(--brand);
-  border: 2rpx solid var(--brand);
-  font-weight: 400;
+  background: #ffffff;
+  border: 1rpx solid var(--line);
+  box-shadow: none;
+  font-weight: 500;
 }
 
-.week-row {
+/* 周次工具条 */
+.week-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx 24rpx 8rpx;
+  margin: 16rpx 16rpx 0;
+  padding: 10rpx 12rpx;
+  background: #ffffff;
+  border: 1rpx solid rgba(233, 237, 246, 0.9);
+  border-radius: 18rpx;
+  box-shadow: 0 8rpx 20rpx rgba(23, 32, 51, 0.05);
 }
 
-.week-picker {
-  padding: 12rpx 28rpx;
-  background: #ffffff;
-  border-radius: 999rpx;
-  font-size: 28rpx;
-  color: #1f2937;
-  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.06);
+.week-nav {
+  display: flex;
+  align-items: center;
+}
+
+.week-arrow {
+  width: 52rpx;
+  height: 52rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.week-arrow.is-disabled {
+  color: #c3cad8;
+  background: #f3f5fa;
+}
+
+.week-current {
+  min-width: 130rpx;
+  margin: 0 10rpx;
+  padding: 12rpx 16rpx;
+  text-align: center;
+  color: var(--ink);
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.week-caret {
+  margin-left: 6rpx;
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .week-actions {
@@ -462,30 +672,253 @@ async function importFromLink() {
   align-items: center;
 }
 
+.week-today {
+  margin-right: 10rpx;
+  padding: 12rpx 18rpx;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 10rpx;
+  font-size: 23rpx;
+  font-weight: 600;
+}
+
 .week-update {
-  margin-right: 16rpx;
-  padding: 12rpx 30rpx;
-  background: #ffffff;
-  border-radius: 999rpx;
-  font-size: 26rpx;
-  color: #6b7280;
-  border: 2rpx solid #e5e7eb;
+  margin-right: 10rpx;
+  padding: 12rpx 18rpx;
+  color: var(--muted);
+  background: #f5f7fb;
+  border-radius: 10rpx;
+  font-size: 23rpx;
 }
 
 .week-manage {
-  padding: 12rpx 30rpx;
+  padding: 12rpx 18rpx;
+  color: #ffffff;
+  background: var(--brand);
+  border-radius: 10rpx;
+  font-size: 23rpx;
+  font-weight: 600;
+  box-shadow: 0 4rpx 10rpx rgba(23, 32, 51, 0.1);
+}
+
+/* 网格课表 */
+.grid-scroll {
+  margin: 16rpx 16rpx 0;
+  padding-bottom: 4rpx;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.grid-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.timetable-card {
+  padding: 16rpx 8rpx 18rpx;
   background: #ffffff;
-  border-radius: 999rpx;
-  font-size: 26rpx;
+  border: 1rpx solid rgba(233, 237, 246, 0.9);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.grid-head {
+  display: flex;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx solid #eef1f7;
+}
+
+.time-col {
+  width: 68rpx;
+  flex-shrink: 0;
+}
+
+.grid-corner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corner-text {
+  font-size: 18rpx;
+  color: #b8bfce;
+}
+
+.day-head {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6rpx 0;
+  border-radius: 10rpx;
+}
+
+.day-head.is-today {
+  background: var(--brand-soft);
+}
+
+.day-name {
+  font-size: 23rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.day-head.is-today .day-name {
   color: var(--brand);
-  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.06);
+}
+
+.day-today {
+  margin-top: 2rpx;
+  font-size: 16rpx;
+  color: var(--brand);
+}
+
+.grid-row {
+  display: flex;
+  border-bottom: 1rpx dashed #eef1f7;
+}
+
+.grid-row:last-child {
+  border-bottom: none;
+}
+
+.time-cell {
+  width: 68rpx;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10rpx 0;
+}
+
+.time-cell.is-current {
+  background: var(--brand-soft);
+  border-radius: 10rpx;
+}
+
+.time-period {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.time-start {
+  margin-top: 4rpx;
+  font-size: 17rpx;
+  color: #b8bfce;
+}
+
+.grid-cell {
+  flex: 1;
+  min-height: 156rpx;
+  padding: 8rpx 5rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-cell.is-today {
+  background: rgba(0, 74, 171, 0.028);
+  border-radius: 10rpx;
+}
+
+.course-block {
+  flex: 1;
+  margin-bottom: 8rpx;
+  padding: 12rpx 10rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 5rpx solid;
+  border-radius: 10rpx;
+  overflow: hidden;
+}
+
+.block-name {
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.block-room {
+  margin-top: 8rpx;
+  font-size: 18rpx;
+  opacity: 0.78;
+  word-break: break-all;
+}
+
+.grid-note {
+  display: flex;
+  align-items: flex-start;
+  margin: 18rpx 16rpx 0;
+  padding: 0 8rpx;
+}
+
+.note-dot {
+  width: 10rpx;
+  height: 10rpx;
+  margin: 12rpx 12rpx 0 0;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+}
+
+.grid-note text {
+  flex: 1;
+  font-size: 20rpx;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.source-hint {
+  padding: 24rpx 32rpx 0;
+  text-align: center;
+  font-size: 20rpx;
+  color: #b8bfce;
+}
+
+.scroll-hint {
+  padding: 14rpx 32rpx 0;
+  text-align: center;
+  font-size: 20rpx;
+  color: var(--brand);
+}
+
+.empty-card {
+  margin: 16rpx 16rpx 0;
+  padding: 70rpx 40rpx;
+  text-align: center;
+  background: #ffffff;
+  border: 1rpx solid rgba(233, 237, 246, 0.9);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.empty-icon {
+  font-size: 64rpx;
+}
+
+.empty-title {
+  margin-top: 18rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.empty-desc {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: var(--muted);
 }
 
 .tip {
   padding: 60rpx 32rpx;
   text-align: center;
-  font-size: 26rpx;
-  color: #9ca3af;
+  font-size: 25rpx;
+  color: var(--muted);
 }
 
 .tip--error {
@@ -498,152 +931,12 @@ async function importFromLink() {
   text-decoration: underline;
 }
 
-.day-card {
-  margin: 20rpx 24rpx 0;
-  padding: 24rpx 28rpx;
-  background: #ffffff;
-  border-radius: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.05);
-}
-
-.day-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12rpx;
-}
-
-.day-name {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: var(--brand);
-}
-
-.day-count {
-  font-size: 22rpx;
-  color: #9ca3af;
-}
-
-.empty-day {
-  padding: 8rpx 0;
-  font-size: 24rpx;
-  color: #c0c4cc;
-}
-
-.course-row {
-  display: flex;
-  padding: 18rpx 0;
-  border-top: 1rpx solid #f3f4f6;
-}
-
-.period {
-  width: 110rpx;
-  flex-shrink: 0;
-  font-size: 24rpx;
-  color: #4b5563;
-  font-weight: 600;
-}
-
-.course-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.course-name {
-  font-size: 28rpx;
-  color: #1f2937;
-  font-weight: 500;
-  word-break: break-all;
-}
-
-.course-meta {
-  margin-top: 6rpx;
-  font-size: 22rpx;
-  color: #9ca3af;
-}
-
-.manual-tag {
-  margin-left: 10rpx;
-  padding: 2rpx 10rpx;
-  font-size: 18rpx;
-  color: #6b7280;
-  background: #f3f4f6;
-  border-radius: 6rpx;
-  vertical-align: middle;
-}
-
-.teacher {
-  margin-left: 16rpx;
-}
-
-.course-time {
-  margin-top: 4rpx;
-  font-size: 22rpx;
-  color: var(--brand);
-}
-
-.time-card {
-  margin: 24rpx 24rpx 0;
-  padding: 28rpx 32rpx;
-  background: #ffffff;
-  border-radius: 20rpx;
-}
-
-.time-title {
-  margin-bottom: 12rpx;
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #4b5563;
-}
-
-.time-row {
-  display: flex;
-  padding: 10rpx 0;
-  border-top: 1rpx solid #f3f4f6;
-}
-
-.time-period {
-  width: 130rpx;
-  flex-shrink: 0;
-  font-size: 24rpx;
-  color: #6b7280;
-}
-
-.time-value {
-  flex: 1;
-  font-size: 24rpx;
-  color: #1f2937;
-  line-height: 1.6;
-  white-space: pre-line;
-}
-
-.time-note {
-  margin-top: 12rpx;
-  font-size: 22rpx;
-  color: #9ca3af;
-  line-height: 1.6;
-}
-
-.course-weeks {
-  margin-top: 6rpx;
-  font-size: 22rpx;
-  color: #b45309;
-}
-
 .stale-tip {
-  margin: 16rpx 24rpx 0;
+  margin: 16rpx 16rpx 0;
   padding: 14rpx 22rpx;
+  color: #b45309;
   background: #fef3c7;
   border-radius: 12rpx;
-  font-size: 22rpx;
-  color: #b45309;
-}
-
-.hint {
-  padding: 32rpx 32rpx 0;
-  text-align: center;
-  font-size: 22rpx;
-  color: #c0c4cc;
-  line-height: 1.6;
+  font-size: 21rpx;
 }
 </style>

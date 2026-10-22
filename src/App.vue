@@ -35,9 +35,15 @@ export default {
 <style>
 /* 全局公共样式 */
 page {
-  background-color: #f6f7f9;
-  color: #1f2937;
+  background-color: #f4f6fb;
+  color: #172033;
   font-size: 28rpx;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  background: var(--page-bg, #f4f6fb);
 }
 </style>

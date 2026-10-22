@@ -299,4 +299,66 @@ function goDetail(record) {
   font-size: 32rpx;
   font-weight: 600;
 }
+
+/* UI refresh overrides */
+.page {
+  background:
+    linear-gradient(180deg, var(--brand-tint) 0, transparent 460rpx),
+    var(--page-bg);
+}
+
+.filters {
+  padding: 20rpx 24rpx 8rpx;
+}
+
+.chip {
+  color: var(--muted);
+  background: #ffffff;
+  border: 1rpx solid var(--line);
+  box-shadow: 0 4rpx 12rpx rgba(23, 32, 51, 0.04);
+}
+
+.chip--active {
+  color: #ffffff;
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: 0 8rpx 18rpx rgba(23, 32, 51, 0.12);
+}
+
+.list {
+  padding-top: 16rpx;
+}
+
+.card {
+  padding: 26rpx;
+  border: 1rpx solid var(--line);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.status {
+  font-weight: 600;
+}
+
+.apply-time,
+.label {
+  color: var(--muted);
+}
+
+.value {
+  color: var(--ink);
+}
+
+.bottom-bar {
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1rpx solid var(--line);
+  box-shadow: 0 -10rpx 30rpx rgba(23, 32, 51, 0.06);
+}
+
+.btn {
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, var(--brand-grad-from) 0%, var(--brand-grad-to) 100%);
+  box-shadow: 0 12rpx 24rpx rgba(23, 32, 51, 0.12);
+}
+
 </style>

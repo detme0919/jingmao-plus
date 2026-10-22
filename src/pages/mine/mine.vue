@@ -1,12 +1,27 @@
 <template>
   <view class="page" :style="pageStyle">
-    <!-- 顶部头部（自绘，替代系统导航栏） -->
     <view class="profile">
+      <view class="profile-glow profile-glow--a"></view>
+      <view class="profile-glow profile-glow--b"></view>
+
+      <view class="profile-topline">
+        <text class="profile-kicker">MY · 个人中心</text>
+        <view class="profile-status" :class="loggedIn ? 'is-online' : ''">
+          <view class="status-dot"></view>
+          <text>{{ loggedIn ? '已登录' : '未登录' }}</text>
+        </view>
+      </view>
+
       <view class="profile-row">
-        <image class="avatar" :src="avatarUrl" mode="aspectFill" @error="onAvatarError" />
+        <view class="avatar-ring">
+          <image class="avatar" :src="avatarUrl" mode="aspectFill" @error="onAvatarError" />
+        </view>
         <view class="profile-body">
           <view class="profile-name">{{ displayName }}</view>
-          <view class="profile-sub">{{ displaySub }}</view>
+          <view v-if="profileParts.length" class="profile-meta">
+            <text v-for="(part, i) in profileParts" :key="i" class="profile-meta-item">{{ part }}</text>
+          </view>
+          <view v-else class="profile-sub">{{ displaySub }}</view>
         </view>
         <view class="login-btn" :class="loggedIn ? 'login-btn--ghost' : ''" @tap="onLoginTap">
           {{ loggedIn ? '退出' : (loginToken ? '重新登录' : '去登录') }}
@@ -15,7 +30,10 @@
     </view>
 
     <view class="group">
-      <view class="group-title">外观</view>
+      <view class="group-head">
+        <view class="group-title">外观主题</view>
+        <view class="group-note">默认经贸蓝</view>
+      </view>
       <view class="theme-row">
         <view
           v-for="t in themes"
@@ -23,8 +41,10 @@
           class="theme-item"
           @tap="chooseTheme(t)"
         >
-          <view class="theme-dot" :style="{ background: t.primary }">
-            <text v-if="theme.id === t.id" class="theme-check">✓</text>
+          <view class="theme-dot-wrap" :class="{ 'is-active': theme.id === t.id }">
+            <view class="theme-dot" :style="{ background: t.primary }">
+              <text v-if="theme.id === t.id" class="theme-check">✓</text>
+            </view>
           </view>
           <view class="theme-name" :class="{ 'is-active': theme.id === t.id }">{{ t.name }}</view>
         </view>
@@ -32,21 +52,37 @@
     </view>
 
     <view class="group">
-      <view class="group-title">数据管理</view>
+      <view class="group-head">
+        <view class="group-title">数据管理</view>
+      </view>
       <view class="cell" @tap="clearSavedLink">
-        <view class="cell-label">清除已保存的链接</view>
+        <view class="cell-icon">🔗</view>
+        <view class="cell-body">
+          <view class="cell-label">清除已保存的链接</view>
+          <view class="cell-sub">仅删除本机保存的登记链接</view>
+        </view>
         <view class="cell-arrow">›</view>
       </view>
       <view class="cell" @tap="clearAllData">
-        <view class="cell-label">清除本机全部数据</view>
+        <view class="cell-icon cell-icon--danger">🧹</view>
+        <view class="cell-body">
+          <view class="cell-label">清除本机全部数据</view>
+          <view class="cell-sub">登录、链接、考勤与课程缓存</view>
+        </view>
         <view class="cell-arrow">›</view>
       </view>
     </view>
 
     <view class="group">
-      <view class="group-title">关于</view>
+      <view class="group-head">
+        <view class="group-title">关于</view>
+      </view>
       <view class="cell" @tap="goAbout">
-        <view class="cell-label">关于经贸+</view>
+        <view class="cell-icon">ℹ️</view>
+        <view class="cell-body">
+          <view class="cell-label">关于经贸+</view>
+          <view class="cell-sub">个人作品与使用说明</view>
+        </view>
         <view class="cell-value">v{{ version }}</view>
         <view class="cell-arrow">›</view>
       </view>
@@ -108,6 +144,11 @@ const displaySub = computed(() => {
   }
   if (loggedIn.value) return '正在同步个人信息…'
   return '登录学校统一认证，同步头像与个人信息'
+})
+const profileParts = computed(() => {
+  const p = person.value
+  if (!p) return []
+  return [p.idnum, p.academy, p.className].filter(Boolean)
 })
 
 onShow(() => {
@@ -278,115 +319,246 @@ function goAbout() {
 <style>
 .page {
   min-height: 100vh;
-  padding-bottom: 40rpx;
+  padding-bottom: 48rpx;
+  background:
+    linear-gradient(180deg, var(--brand-tint) 0, transparent 460rpx),
+    var(--page-bg);
 }
 
 .profile {
-  padding: calc(var(--status-bar-height) + 48rpx) 40rpx 48rpx;
-  background: linear-gradient(135deg, var(--brand-grad-from) 0%, var(--brand-grad-to) 100%);
+  position: relative;
+  overflow: hidden;
+  padding: calc(var(--status-bar-height) + 30rpx) 32rpx 40rpx;
+  color: #ffffff;
+  background: linear-gradient(140deg, var(--brand-grad-from) 0%, var(--brand-grad-to) 100%);
+  border-radius: 0;
+}
+
+.profile-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.profile-glow--a {
+  width: 300rpx;
+  height: 300rpx;
+  top: -130rpx;
+  right: -100rpx;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-glow--b {
+  width: 180rpx;
+  height: 180rpx;
+  right: 110rpx;
+  bottom: -120rpx;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.profile-topline {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-kicker {
+  font-size: 20rpx;
+  letter-spacing: 3rpx;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.profile-status {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 16rpx;
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1rpx solid rgba(255, 255, 255, 0.28);
+  border-radius: 999rpx;
+}
+
+.profile-status .status-dot {
+  width: 8rpx;
+  height: 8rpx;
+  margin-right: 8rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.profile-status.is-online .status-dot {
+  background: #7df0c1;
+  box-shadow: 0 0 0 6rpx rgba(125, 240, 193, 0.12);
 }
 
 .profile-row {
+  position: relative;
   display: flex;
   align-items: center;
+  margin-top: 28rpx;
+}
+
+.avatar-ring {
+  width: 124rpx;
+  height: 124rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1rpx solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
 }
 
 .avatar {
-  width: 112rpx;
-  height: 112rpx;
+  width: 104rpx;
+  height: 104rpx;
   border-radius: 50%;
   background: #ffffff;
-  border: 3rpx solid rgba(255, 255, 255, 0.35);
-  flex-shrink: 0;
 }
 
 .profile-body {
   flex: 1;
-  margin-left: 26rpx;
+  margin-left: 22rpx;
   min-width: 0;
 }
 
 .profile-name {
-  font-size: 38rpx;
-  font-weight: 600;
+  font-size: 40rpx;
+  font-weight: 700;
   color: #ffffff;
+  letter-spacing: 0.5rpx;
 }
 
 .profile-sub {
   margin-top: 8rpx;
   font-size: 22rpx;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.82);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.78);
+  white-space: normal;
+  word-break: break-all;
+}
+
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 8rpx;
+}
+
+.profile-meta-item {
+  max-width: 100%;
+  margin: 6rpx 10rpx 0 0;
+  padding: 4rpx 12rpx;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1rpx solid rgba(255, 255, 255, 0.14);
+  border-radius: 8rpx;
+  font-size: 20rpx;
+  line-height: 1.5;
+  word-break: break-all;
 }
 
 .login-btn {
   flex-shrink: 0;
-  margin-left: 16rpx;
-  padding: 12rpx 28rpx;
-  border-radius: 999rpx;
-  background: #ffffff;
+  margin-left: 14rpx;
+  padding: 12rpx 24rpx;
   color: var(--brand);
-  font-size: 26rpx;
+  background: #ffffff;
+  border-radius: 999rpx;
+  font-size: 24rpx;
   font-weight: 600;
+  box-shadow: 0 6rpx 16rpx rgba(10, 25, 55, 0.12);
 }
 
 .login-btn--ghost {
-  background: transparent;
-  border: 2rpx solid rgba(255, 255, 255, 0.6);
   color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1rpx solid rgba(255, 255, 255, 0.4);
+  box-shadow: none;
   font-weight: 400;
 }
 
 .group {
-  margin: 28rpx 24rpx 0;
+  margin: 26rpx 24rpx 0;
+  padding-bottom: 4rpx;
   background: #ffffff;
-  border-radius: 20rpx;
+  border: 1rpx solid rgba(233, 237, 246, 0.9);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
+.group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 26rpx 26rpx 8rpx;
+}
+
 .group-title {
-  padding: 24rpx 28rpx 8rpx;
-  font-size: 24rpx;
-  color: #9ca3af;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.3rpx;
+}
+
+.group-note {
+  font-size: 21rpx;
+  color: var(--muted);
 }
 
 .theme-row {
   display: flex;
   justify-content: space-between;
-  padding: 12rpx 28rpx 28rpx;
+  padding: 8rpx 18rpx 24rpx;
 }
 
 .theme-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 110rpx;
+  width: 20%;
 }
 
-.theme-dot {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
+.theme-dot-wrap {
+  width: 78rpx;
+  height: 78rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 10rpx rgba(15, 23, 42, 0.15);
+  border: 2rpx solid transparent;
+  border-radius: 50%;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.theme-dot-wrap.is-active {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.theme-dot {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 4rpx 10rpx rgba(15, 23, 42, 0.14);
 }
 
 .theme-check {
   color: #ffffff;
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: 700;
   line-height: 1;
 }
 
 .theme-name {
-  margin-top: 12rpx;
-  font-size: 22rpx;
-  color: #9ca3af;
+  margin-top: 10rpx;
+  font-size: 21rpx;
+  color: var(--muted);
 }
 
 .theme-name.is-active {
@@ -397,23 +569,50 @@ function goAbout() {
 .cell {
   display: flex;
   align-items: center;
-  padding: 30rpx 28rpx;
-  border-top: 1rpx solid #f3f4f6;
+  padding: 22rpx 26rpx;
 }
 
-.group-title + .cell {
-  border-top: none;
+.cell + .cell {
+  border-top: 1rpx solid var(--line);
+}
+
+.cell-icon {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--brand-soft);
+  border-radius: 18rpx;
+  font-size: 28rpx;
+}
+
+.cell-icon--danger {
+  background: #fef2f2;
+}
+
+.cell-body {
+  flex: 1;
+  margin-left: 16rpx;
+  min-width: 0;
 }
 
 .cell-label {
-  flex: 1;
-  font-size: 30rpx;
-  color: #1f2937;
+  font-size: 28rpx;
+  color: var(--ink);
+}
+
+.cell-sub {
+  margin-top: 5rpx;
+  font-size: 21rpx;
+  color: var(--muted);
 }
 
 .cell-value {
-  font-size: 26rpx;
-  color: #9ca3af;
+  margin-left: 10rpx;
+  font-size: 23rpx;
+  color: var(--muted);
 }
 
 .cell-value.is-ok {
@@ -429,15 +628,17 @@ function goAbout() {
 }
 
 .cell-arrow {
-  margin-left: 12rpx;
-  font-size: 36rpx;
-  color: #d1d5db;
+  margin-left: 10rpx;
+  color: #c3cad8;
+  font-size: 34rpx;
+  line-height: 1;
 }
 
 .footer {
-  padding: 48rpx 0 16rpx;
+  padding: 44rpx 0 12rpx;
   text-align: center;
-  font-size: 22rpx;
-  color: #c0c4cc;
+  font-size: 21rpx;
+  color: #b8bfce;
+  letter-spacing: 0.5rpx;
 }
 </style>

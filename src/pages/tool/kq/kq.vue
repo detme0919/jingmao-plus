@@ -562,4 +562,85 @@ function unbindKq() {
   color: #c0c4cc;
   line-height: 1.6;
 }
+
+/* UI refresh overrides */
+.page {
+  background:
+    linear-gradient(180deg, var(--brand-tint) 0, transparent 460rpx),
+    var(--page-bg);
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  margin: 24rpx;
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-float);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  width: 220rpx;
+  height: 220rpx;
+  top: -90rpx;
+  right: -70rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-label,
+.hero-date,
+.hero-meta,
+.hero-remain {
+  color: rgba(255, 255, 255, 0.8);
+  opacity: 1;
+}
+
+.card,
+.records-card {
+  margin-left: 24rpx;
+  margin-right: 24rpx;
+  border: 1rpx solid var(--line);
+  border-radius: 26rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.card {
+  padding: 30rpx 26rpx;
+}
+
+.card-title {
+  color: var(--ink);
+}
+
+.card-sub,
+.login-note {
+  color: var(--muted);
+}
+
+.input {
+  color: var(--ink);
+  background: #f7f9fc;
+  border-color: var(--line);
+}
+
+.primary-btn,
+.secondary-btn {
+  border-radius: 18rpx;
+}
+
+.punch-btn {
+  height: 108rpx;
+  border-radius: 20rpx;
+}
+
+.records-title {
+  color: var(--ink);
+}
+
+.records-count {
+  color: var(--muted);
+}
+
 </style>
