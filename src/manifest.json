@@ -2,8 +2,8 @@
     "name" : "经贸+",
     "appid" : "__UNI__9011156",
     "description" : "河南经贸职业学院校园工具箱",
-    "versionName" : "0.1.0",
-    "versionCode" : 105,
+    "versionName" : "0.2.0",
+    "versionCode" : 106,
     "transformPx" : false,
     "app-plus" : {
         "usingComponents" : true,

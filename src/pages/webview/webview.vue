@@ -21,34 +21,34 @@ let captureTimer = null
 let captureTries = 0
 let backTimer = null
 
-const ALLOWED_HOSTS = new Set([
-  'smartlock.henetc.edu.cn',
-  'id.henetc.edu.cn',
-  'auth.henetc.edu.cn',
-  'kq.henetc.edu.cn',
-  'weixin.henetc.edu.cn'
-])
+const ALLOWED_URL = /^https?:\/\/(?:[a-z0-9-]+\.)*(?:henetc\.edu\.cn|hnjmxy\.cn)(?::\d+)?(?:[/?#]|$)/i
 
 const CAS_HOST = /auth\.henetc\.edu\.cn/i
+const SMARTLOCK_HOST = /^https?:\/\/smartlock\.(?:henetc\.edu\.cn|hnjmxy\.cn)/i
 
 function isAllowedWebviewUrl(value) {
-  try {
-    const u = new URL(value)
-    return (u.protocol === 'http:' || u.protocol === 'https:') && ALLOWED_HOSTS.has(u.hostname)
-  } catch (e) {
-    return false
-  }
+  return ALLOWED_URL.test(String(value || '').trim())
+}
+
+function linkHost(value) {
+  const match = String(value || '').match(/^https?:\/\/([^/?#]+)/i)
+  return match ? match[1] : ''
 }
 
 function safeDecode(v) {
-  if (!v) return ''
-  // 已经是完整地址说明路由层已解码过，直接使用，避免二次解码破坏链接
-  if (/^(https?:)?\/\//i.test(v)) return v
-  try {
-    return decodeURIComponent(v)
-  } catch (e) {
-    return v
+  let value = String(v || '')
+  // App 端路由可能比 H5 多保留一层编码；只解到外层 URL 能识别为 http(s) 为止，
+  // 避免继续解码把 callback 里的 %23 等参数破坏掉。
+  for (let i = 0; i < 5 && value && !/^https?:\/\//i.test(value); i++) {
+    try {
+      const next = decodeURIComponent(value)
+      if (next === value) break
+      value = next
+    } catch (e) {
+      break
+    }
   }
+  return value
 }
 
 onLoad((query) => {
@@ -57,7 +57,8 @@ onLoad((query) => {
   capture = !!(query && query.capture)
   if (title) uni.setNavigationBarTitle({ title })
   if (!isAllowedWebviewUrl(url)) {
-    uni.showToast({ title: '不支持打开该链接', icon: 'none' })
+    const host = linkHost(url)
+    uni.showToast({ title: host ? '不支持打开：' + host : '不支持打开该链接', icon: 'none' })
     return
   }
   src.value = url
@@ -111,6 +112,33 @@ function injectRememberMe(wv) {
   )
 }
 
+/** 登录后 SPA 可能很快把 token 从地址栏移除；把 localStorage 里的 token 暂存到标题供轮询读取 */
+function hookSmartlockToken(wv) {
+  if (!wv || !wv.evalJS) return
+  wv.evalJS(
+    "(function(){try{" +
+      "if(document.title.indexOf('JMTOKEN:')===0)return;" +
+      "var t=localStorage.getItem('token')||localStorage.getItem('access_token');" +
+      "if(t&&/^[A-Za-z0-9._-]{8,}$/.test(t)){document.title='JMTOKEN:'+t;}" +
+      "}catch(e){}})()"
+  )
+}
+
+function acceptToken(parsed) {
+  if (!parsed) return false
+  saveLoginToken(parsed)
+  setMode('login')
+  stopCapture()
+  uni.showToast({ title: '已保存登录凭证', icon: 'none' })
+  // 登录流程是从「我的」发起的，拿到凭证后自动返回，避免停留在登记页
+  if (backTimer) clearTimeout(backTimer)
+  backTimer = setTimeout(() => {
+    backTimer = null
+    uni.navigateBack({ delta: 1 })
+  }, 700)
+  return true
+}
+
 /** 页面打开期间持续观察内嵌页：CAS 页面自动勾「记住我」，登录流程顺带保存 token */
 function startCapture() {
   // #ifdef APP-PLUS
@@ -121,20 +149,23 @@ function startCapture() {
     for (let i = children.length - 1; i >= 0; i--) {
       const wv = children[i]
       const url = wv && wv.getURL ? wv.getURL() : ''
-      const parsed = capture ? parseLoginToken(url) : null
-      if (parsed) {
-        saveLoginToken(parsed)
-        setMode('login')
-        stopCapture()
-        uni.showToast({ title: '已保存登录凭证', icon: 'none' })
-        // 登录流程是从「我的」发起的，拿到凭证后自动返回，避免停留在登记页
-        if (backTimer) clearTimeout(backTimer)
-        backTimer = setTimeout(() => {
-          backTimer = null
-          uni.navigateBack({ delta: 1 })
-        }, 700)
-        return
+      let parsed = capture ? parseLoginToken(url) : null
+      if (!parsed && capture && SMARTLOCK_HOST.test(url)) {
+        hookSmartlockToken(wv)
+        let title = ''
+        try {
+          title = wv && wv.getTitle ? wv.getTitle() : ''
+        } catch (e) { /* 忽略 */ }
+        if (title && title.indexOf('JMTOKEN:') === 0) {
+          const token = title.slice(8).replace(/[^A-Za-z0-9._-]/g, '')
+          if (token.length >= 8) {
+            parsed = parseLoginToken(
+              'http://smartlock.henetc.edu.cn/throughSchool/static/app/#/perregister?token=' + token
+            )
+          }
+        }
       }
+      if (acceptToken(parsed)) return
     }
     if (captureTries > 240) stopCapture()
   }, 1500)

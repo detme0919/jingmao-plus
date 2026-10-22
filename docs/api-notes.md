@@ -277,16 +277,7 @@ POST /core/user/config/getList
 | `POST /core/user/outapply/detail` | 申请详情，参数 `{ id }` |
 | `POST /core/user/Outrecordlog/getList` | 出入记录日志 |
 
-### 4.7 远程开门（未实现）
-
-| 接口 | 说明 |
-| --- | --- |
-| `POST /core/user/facility/getListbyApply` | 当前申请关联的门禁设备列表 |
-| `POST /core/user/facility/openDoorbyApply` | 开门，参数 `{ facilitynum }` |
-
-> ⚠️ 该接口直接控制实体闸机，涉及安全风险。App 目前**不实现**该功能；如未来接入，必须保留二次确认和明确的物理设备提示。
-
-### 4.8 App 实现
+### 4.7 App 实现
 
 | 功能 | 文件 |
 | --- | --- |

@@ -51,7 +51,7 @@ import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getTheme, themeVars, applyNavTheme } from '@/utils/theme.js'
 
-const version = '0.1.0'
+const version = '0.2.0'
 const theme = ref(getTheme())
 const pageStyle = computed(() => themeVars(theme.value))
 

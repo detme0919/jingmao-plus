@@ -76,14 +76,22 @@ export function clearMode() {
  * 学校回调拼接 token 的方式可能是 `#/perregister?token=x` 或 `?token=x#/perregister`，两种都兼容。
  */
 export function parseLoginToken(url) {
-  const u = String(url || '')
-  let parsed = null
-  try {
-    parsed = new URL(u)
-  } catch (e) {
-    return null
+  let u = String(url || '').trim()
+  // 某些 App WebView 返回的地址可能仍带一层或多层编码
+  for (let i = 0; i < 5 && u && !/^https?:\/\//i.test(u); i++) {
+    try {
+      const next = decodeURIComponent(u)
+      if (next === u) break
+      u = next
+    } catch (e) {
+      break
+    }
   }
-  if (!['smartlock.henetc.edu.cn', 'smartlock.hnjmxy.cn'].includes(parsed.hostname)) return null
+  const head = u.match(/^(https?):\/\/([^/?#]+)/i)
+  if (!head) return null
+  const protocol = head[1].toLowerCase()
+  const host = head[2].toLowerCase().split(':')[0]
+  if (!['smartlock.henetc.edu.cn', 'smartlock.hnjmxy.cn'].includes(host)) return null
   const tokenMatch = u.match(/[?&]token=([A-Za-z0-9._-]{8,})/i)
   if (!tokenMatch) return null
   const expireMatch = u.match(/[?&]expire=(\d+)/i)
@@ -91,7 +99,7 @@ export function parseLoginToken(url) {
   return {
     token,
     expire: expireMatch ? parseInt(expireMatch[1], 10) : 86400,
-    url: parsed.origin + '/throughSchool/static/app/#/perregister?token=' + token,
+    url: protocol + '://' + host + '/throughSchool/static/app/#/perregister?token=' + token,
     savedAt: Date.now()
   }
 }

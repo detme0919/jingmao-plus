@@ -86,7 +86,7 @@ import {
   avatarOf
 } from '@/utils/person.js'
 
-const version = '0.1.0'
+const version = '0.2.0'
 const link = ref(null)
 const loginToken = ref(null)
 const person = ref(null)
