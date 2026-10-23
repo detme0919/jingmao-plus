@@ -80,7 +80,7 @@
     </block>
 
     <view class="help">
-      打卡使用手机定位（GCJ-02），请确保已开启定位权限。
+      打卡使用手机定位（GCJ-02），请确保系统定位服务和「经贸+」的定位权限（精确位置）均已开启。
     </view>
   </view>
 </template>
@@ -233,6 +233,20 @@ async function load() {
   loading.value = false
 }
 
+function locationHint(msg) {
+  const m = String(msg || '')
+  if (/deny|auth|permission|拒绝|授权/i.test(m)) {
+    return '系统没有允许「经贸+」使用定位。请到系统设置 → 应用 → 经贸+ → 权限，把“位置信息”设为允许，并选择“精确位置”后重试。'
+  }
+  if (/timeout|超时/i.test(m)) {
+    return '定位超时。室内、地下或信号弱的地方容易失败，请到窗边或室外重试，并确认手机定位服务已开启。'
+  }
+  if (/switch|off|service|provider|disabled|关闭/i.test(m)) {
+    return '手机定位服务可能没有开启。请打开系统定位（GPS），并允许「经贸+」使用定位后重试。'
+  }
+  return '未能获取当前位置。请确认手机定位服务已开启，并允许「经贸+」使用定位后重试。'
+}
+
 async function doPunch() {
   if (punching.value) return
   if (!auth.value) {
@@ -256,8 +270,14 @@ async function doPunch() {
     punching.value = false
     uni.showModal({
       title: '定位失败',
-      content: '打卡需要获取当前位置，请在系统设置中允许「经贸+」使用定位后重试。',
-      showCancel: false
+      content:
+        locationHint(loc.msg) +
+        (loc.detail ? '\n\n错误信息：' + loc.detail : ''),
+      confirmText: '重试',
+      cancelText: '关闭',
+      success: (r) => {
+        if (r.confirm) doPunch()
+      }
     })
     return
   }

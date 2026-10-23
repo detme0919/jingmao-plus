@@ -266,8 +266,8 @@ export async function fetchKqToday(token) {
   }))
 }
 
-/** 获取定位（GCJ-02，与微信小程序一致） */
-export function getKqPosition() {
+/** 单次定位，带超时保护 */
+function locateOnce(options, timeout) {
   return new Promise((resolve) => {
     let done = false
     let timer = null
@@ -278,19 +278,44 @@ export function getKqPosition() {
       resolve(value)
     }
     timer = setTimeout(() => {
-      finish({ ok: false, msg: '定位超时，请稍后重试' })
-    }, 12000)
-    uni.getLocation({
-      type: 'gcj02',
-      isHighAccuracy: true,
-      success: (res) => {
-        finish({ ok: true, position: res.longitude + ',' + res.latitude })
-      },
-      fail: (err) => {
-        finish({ ok: false, msg: (err && err.errMsg) || '定位失败' })
-      }
-    })
+      finish({ ok: false, msg: '定位超时' })
+    }, timeout)
+    try {
+      uni.getLocation({
+        type: 'gcj02',
+        ...options,
+        success: (res) => {
+          if (res && typeof res.longitude === 'number' && typeof res.latitude === 'number') {
+            finish({ ok: true, position: res.longitude + ',' + res.latitude })
+          } else {
+            finish({ ok: false, msg: '定位返回数据无效' })
+          }
+        },
+        fail: (err) => {
+          finish({ ok: false, msg: (err && err.errMsg) || '定位失败' })
+        }
+      })
+    } catch (e) {
+      finish({ ok: false, msg: (e && (e.message || e.errMsg)) || '当前环境不支持定位' })
+    }
   })
+}
+
+/**
+ * 获取定位（GCJ-02，与微信小程序一致）
+ * 先请求高精度；室内等弱信号场景超时后自动退到普通精度，避免打卡长时间卡住。
+ */
+export async function getKqPosition() {
+  const high = await locateOnce({ isHighAccuracy: true, highAccuracyExpireTime: 6000 }, 9000)
+  if (high.ok) return high
+  if (/deny|auth|permission|拒绝|授权/i.test(high.msg)) return high
+  const normal = await locateOnce({ isHighAccuracy: false }, 7000)
+  if (normal.ok) return normal
+  return {
+    ok: false,
+    msg: normal.msg || high.msg,
+    detail: [high.msg, normal.msg].filter(Boolean).join(' / ')
+  }
 }
 
 /**
