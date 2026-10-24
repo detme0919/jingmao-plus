@@ -39,7 +39,10 @@ pub struct LeaveConfig {
     pub advance_days: u32,
 }
 
-async fn post_leave(path: &str, form: Vec<(&str, String)>) -> Result<Value, String> {
+async fn post_leave(path: &str, mut form: Vec<(&str, String)>) -> Result<Value, String> {
+    // 学校接口要求公共参数（与旧版一致）
+    form.push(("pid", "yyzx".into()));
+    form.push(("aid", "throughSchool".into()));
     let url = format!("{SMARTLOCK_API}{path}");
     let resp = crate::util::client()
         .post(&url)

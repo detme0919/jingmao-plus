@@ -1,0 +1,310 @@
+/* 工作台 */
+.jm-clip-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--jm-card);
+  border: 1px solid var(--jm-brand-soft);
+  border-radius: 14px;
+  box-shadow: var(--jm-shadow-card);
+}
+
+.jm-clip-icon {
+  font-size: 18px;
+}
+
+.jm-clip-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--jm-ink);
+}
+
+.jm-clip-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.jm-service-card {
+  display: flex;
+  align-items: center;
+  background: var(--jm-card);
+  border-radius: var(--jm-radius-card);
+  box-shadow: var(--jm-shadow-card);
+  padding: 16px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.jm-service-card:active {
+  transform: scale(0.99);
+  background: #fafafc;
+}
+
+.jm-service-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--jm-brand-soft);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.jm-service-icon--kq {
+  background: rgba(234, 88, 12, 0.08);
+}
+
+.jm-service-body {
+  flex: 1;
+  min-width: 0;
+  margin-left: 14px;
+}
+
+.jm-service-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--jm-ink);
+}
+
+.jm-service-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--jm-brand);
+  background: var(--jm-brand-soft);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.jm-service-desc {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--jm-ink-3);
+}
+
+.jm-service-go {
+  color: var(--jm-ink-3);
+  font-size: 18px;
+}
+
+.jm-login-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--jm-brand-soft);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--jm-ink-2);
+}
+
+/* 筛选 chips */
+.jm-chips {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.jm-chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* 出校登记列表 */
+.jm-leave-card {
+  background: var(--jm-card);
+  border-radius: 14px;
+  box-shadow: var(--jm-shadow-card);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.jm-leave-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jm-leave-time {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--jm-ink);
+}
+
+.jm-leave-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--jm-ink-2);
+}
+
+.jm-leave-reason {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--jm-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jm-status {
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.jm-status--info { color: var(--jm-ink-2); background: var(--jm-bg); }
+.jm-status--warn { color: #b45309; background: #fef3c7; }
+.jm-status--ok { color: var(--jm-ok); background: rgba(48, 164, 108, 0.1); }
+.jm-status--danger { color: var(--jm-danger); background: rgba(229, 72, 77, 0.09); }
+
+.jm-bottom-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, var(--jm-bg) 40%);
+}
+
+.jm-primary-btn {
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: var(--jm-radius-btn);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--jm-brand);
+  box-shadow: 0 8px 20px var(--jm-brand-tint);
+}
+
+.jm-primary-btn:disabled {
+  opacity: 0.6;
+}
+
+/* 详情 */
+.jm-detail-status {
+  margin-bottom: 14px;
+}
+
+.jm-detail-row {
+  display: flex;
+  padding: 10px 0;
+  border-top: 1px solid var(--jm-line);
+  font-size: 14px;
+}
+
+.jm-detail-label {
+  width: 76px;
+  flex-shrink: 0;
+  color: var(--jm-ink-3);
+}
+
+.jm-detail-value {
+  flex: 1;
+  color: var(--jm-ink);
+}
+
+/* 打卡考勤 */
+.jm-punch-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px;
+}
+
+.jm-punch-user {
+  text-align: center;
+}
+
+.jm-punch-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.jm-punch-class {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--jm-ink-3);
+}
+
+.jm-punch-btn {
+  width: 100%;
+  height: 52px;
+  margin-top: 18px;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--jm-brand) 0%, var(--jm-brand-strong) 100%);
+  box-shadow: 0 10px 24px var(--jm-brand-tint);
+}
+
+.jm-punch-btn:disabled {
+  opacity: 0.7;
+}
+
+.jm-punch-tip {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--jm-ink-3);
+  text-align: center;
+}
+
+.jm-record-card {
+  background: var(--jm-card);
+  border-radius: 14px;
+  box-shadow: var(--jm-shadow-card);
+  padding: 12px 16px;
+  margin-bottom: 10px;
+}
+
+.jm-record-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--jm-ink);
+}
+
+.jm-record-title {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--jm-ink-2);
+}
+
+.jm-record-pos {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--jm-ink-3);
+}
+
+.jm-remember-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.jm-config-tip {
+  padding: 10px 14px;
+  background: var(--jm-brand-soft);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--jm-ink-2);
+  margin-bottom: 12px;
+}
+
+.jm-time-row {
+  display: flex;
+  gap: 10px;
+}

@@ -1,0 +1,113 @@
+/* 周次工具条与提示 */
+.jm-weekbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: var(--jm-card);
+  border-radius: 14px;
+  box-shadow: var(--jm-shadow-card);
+}
+
+.jm-week-nav {
+  display: flex;
+  align-items: center;
+}
+
+.jm-week-arrow {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  color: var(--jm-brand);
+  background: var(--jm-brand-soft);
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 0;
+}
+
+.jm-week-arrow.is-disabled {
+  color: var(--jm-ink-3);
+  background: var(--jm-line);
+}
+
+.jm-week-current {
+  min-width: 76px;
+  margin: 0 8px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  text-align: center;
+  color: var(--jm-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.jm-week-caret {
+  margin-left: 4px;
+  color: var(--jm-ink-3);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.jm-week-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jm-chip {
+  border: none;
+  padding: 7px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--jm-ink-2);
+  background: var(--jm-bg);
+  display: flex;
+  align-items: center;
+}
+
+.jm-chip--brand {
+  color: var(--jm-brand);
+  background: var(--jm-brand-soft);
+  font-weight: 600;
+}
+
+.jm-chip--solid {
+  color: #fff;
+  background: var(--jm-brand);
+  font-weight: 600;
+}
+
+.jm-tip {
+  padding: 40px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--jm-ink-2);
+}
+
+.jm-tip--error {
+  color: var(--jm-danger);
+}
+
+.jm-retry {
+  margin-left: 8px;
+  color: var(--jm-brand);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.jm-stale {
+  margin-top: 10px;
+  padding: 10px 14px;
+  color: #b45309;
+  background: #fef3c7;
+  border-radius: 10px;
+  font-size: 12px;
+}

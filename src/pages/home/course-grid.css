@@ -1,0 +1,162 @@
+/* 课表网格 */
+.cg-card {
+  background: var(--jm-card);
+  border-radius: var(--jm-radius-card);
+  box-shadow: var(--jm-shadow-card);
+  padding: 14px 8px 12px;
+  margin-top: 12px;
+}
+
+.cg-head {
+  display: flex;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--jm-line);
+}
+
+.cg-corner,
+.cg-time {
+  width: 52px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cg-corner {
+  font-size: 11px;
+  color: var(--jm-ink-3);
+}
+
+.cg-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.cg-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.cg-body {
+  min-width: 100%;
+}
+
+.cg-row {
+  display: flex;
+  border-bottom: 1px dashed var(--jm-line);
+}
+
+.cg-row:last-child {
+  border-bottom: none;
+}
+
+.cg-time-period {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--jm-ink);
+}
+
+.cg-time-start {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--jm-ink-3);
+}
+
+.cg-time.is-current,
+.cg-row.is-current .cg-time {
+  background: var(--jm-brand-soft);
+  border-radius: 8px;
+}
+
+.cg-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.cg-day.is-today {
+  background: var(--jm-brand-soft);
+}
+
+.cg-day-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--jm-ink);
+}
+
+.cg-day.is-today .cg-day-name {
+  color: var(--jm-brand);
+}
+
+.cg-day-today {
+  font-size: 10px;
+  color: var(--jm-brand);
+}
+
+.cg-cell {
+  flex: 1;
+  min-width: 0;
+  min-height: 74px;
+  padding: 4px 3px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cg-cell.is-today {
+  background: var(--jm-brand-soft);
+  opacity: 0.35;
+  border-radius: 8px;
+}
+
+.cg-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6px 6px;
+  border-left: 3px solid;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.cg-block-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: break-all;
+}
+
+.cg-block-room {
+  margin-top: 3px;
+  font-size: 10px;
+  opacity: 0.75;
+  word-break: break-all;
+}
+
+.cg-scroll-hint {
+  padding-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--jm-brand);
+}
+
+.cg-note {
+  margin-top: 10px;
+  padding: 0 8px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--jm-ink-3);
+}
+
+.cg-source {
+  padding: 12px 16px 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--jm-ink-3);
+}

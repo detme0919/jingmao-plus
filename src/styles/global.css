@@ -152,3 +152,235 @@ body {
 .adm-tabbar {
   height: var(--jm-tabbar-height);
 }
+
+/* 子页面无 TabBar 底部留白 */
+.app-page--sub {
+  padding-bottom: 32px;
+}
+
+/* 通用卡片列表组 */
+.jm-group {
+  margin-top: 14px;
+  background: var(--jm-card);
+  border-radius: var(--jm-radius-card);
+  box-shadow: var(--jm-shadow-card);
+  overflow: hidden;
+}
+
+.jm-group-title {
+  padding: 14px 16px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--jm-ink-2);
+}
+
+.jm-cell {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid var(--jm-line);
+  cursor: pointer;
+}
+
+.jm-cell:active {
+  background: var(--jm-bg);
+}
+
+.jm-cell-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  background: var(--jm-brand-soft);
+  border-radius: 10px;
+  margin-right: 12px;
+}
+
+.jm-cell-icon--danger {
+  background: rgba(229, 72, 77, 0.09);
+}
+
+.jm-cell-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.jm-cell-label {
+  font-size: 15px;
+  color: var(--jm-ink);
+}
+
+.jm-cell-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--jm-ink-3);
+}
+
+.jm-cell-arrow {
+  color: var(--jm-ink-3);
+  font-size: 18px;
+}
+
+.jm-cell-value {
+  margin-right: 6px;
+  font-size: 13px;
+  color: var(--jm-ink-3);
+}
+
+/* 个人资料卡 */
+.jm-profile-card {
+  display: flex;
+  align-items: center;
+  background: var(--jm-card);
+  border-radius: var(--jm-radius-card);
+  box-shadow: var(--jm-shadow-card);
+  padding: 18px 16px;
+}
+
+.jm-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--jm-line);
+}
+
+.jm-profile-body {
+  flex: 1;
+  min-width: 0;
+  margin-left: 14px;
+}
+
+.jm-profile-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--jm-ink);
+}
+
+.jm-profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.jm-profile-chip {
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--jm-ink-2);
+  background: var(--jm-bg);
+  border-radius: 999px;
+}
+
+.jm-profile-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--jm-ink-3);
+}
+
+/* 主题色选择 */
+.jm-accent-row {
+  display: flex;
+  padding: 6px 10px 14px;
+  gap: 4px;
+}
+
+.jm-accent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 6px 0;
+}
+
+.jm-accent-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+}
+
+.jm-accent.is-active .jm-accent-dot {
+  box-shadow: 0 0 0 3px var(--jm-card), 0 0 0 5px currentColor;
+}
+
+.jm-accent-dot--indigo { background: #4f46e5; }
+.jm-accent-dot--teal { background: #0d9488; }
+.jm-accent-dot--violet { background: #7c3aed; }
+.jm-accent-dot--orange { background: #ea580c; }
+.jm-accent-dot--rose { background: #e11d48; }
+
+.jm-accent-name {
+  font-size: 11px;
+  color: var(--jm-ink-2);
+}
+
+/* 表单 */
+.jm-field-label {
+  font-size: 13px;
+  color: var(--jm-ink-2);
+  margin-bottom: 6px;
+}
+
+.jm-picker-value {
+  padding: 12px 14px;
+  background: var(--jm-bg);
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--jm-ink);
+  cursor: pointer;
+}
+
+.jm-picker-value--empty {
+  color: var(--jm-ink-3);
+}
+
+.jm-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--jm-bg);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--jm-ink);
+  outline: none;
+}
+
+.jm-counter {
+  text-align: right;
+  font-size: 11px;
+  color: var(--jm-ink-3);
+  margin-top: 4px;
+}
+
+.jm-nav-action {
+  color: var(--jm-brand);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.jm-section-title {
+  margin: 16px 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--jm-ink);
+  padding-left: 10px;
+  border-left: 3px solid var(--jm-brand);
+  line-height: 1.2;
+}
+
+.jm-footer {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--jm-ink-3);
+}
