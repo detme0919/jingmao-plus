@@ -141,9 +141,9 @@ export default function WeekGrid({
     <div className="wk">
       <header className="dv-header">
         <div className="dv-kicker">{className}</div>
-        <div className="dv-date-row">
+        <div className="wk-bar">
           <button
-            className={`wk-arrow ${weekIndex === 0 ? 'is-disabled' : ''}`}
+            className={`wk-bar-arrow ${weekIndex === 0 ? 'is-disabled' : ''}`}
             onClick={() => onWeekChange(Math.max(0, weekIndex - 1))}
             type="button"
           >
@@ -158,24 +158,39 @@ export default function WeekGrid({
             }}
           >
             {(_, actions) => (
-              <button className="dv-date dv-date--btn" onClick={() => actions.open()} type="button">
+              <button className="wk-bar-title" onClick={() => actions.open()} type="button">
                 {titleText}
                 {loading ? <DotLoading color="primary" /> : null}
               </button>
             )}
           </Picker>
           <button
-            className={`wk-arrow ${weekIndex >= weeksTotal ? 'is-disabled' : ''}`}
+            className={`wk-bar-arrow ${weekIndex >= weeksTotal ? 'is-disabled' : ''}`}
             onClick={() => onWeekChange(Math.min(weeksTotal, weekIndex + 1))}
             type="button"
           >
             ›
           </button>
-          <span className="dv-actions">
-            <a onClick={onRefresh} title="刷新">刷新</a>
-            <a onClick={onOpenDay} title="日视图">日视图</a>
-            <a onClick={onOpenManage}>管理</a>
-          </span>
+          <span className="wk-bar-spacer" />
+          <button className="wk-bar-icon" onClick={onRefresh} type="button" title="刷新">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+              <path d="M20 11.5a8 8 0 1 0-2.2 6" />
+              <path d="M20 4v7h-7" />
+            </svg>
+          </button>
+          <button className="wk-bar-icon" onClick={onOpenDay} type="button" title="日视图">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+              <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+              <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
+            </svg>
+          </button>
+          <button className="wk-bar-icon" onClick={onOpenManage} type="button" title="管理">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
+          </button>
         </div>
         <div className="dv-meta">
           <span>{totalCourses} 节课</span>
