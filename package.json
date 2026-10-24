@@ -1,7 +1,7 @@
 {
   "name": "jingmao-plus",
   "private": true,
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "经贸+ · 校园工具箱（河南经贸职业学院）",
   "type": "module",
   "scripts": {

@@ -27,6 +27,8 @@ const TIMEOUT_SECS: u64 = 360;
 ///    `#/perregister?token=` 不会触发导航事件，必须在页面内解析）。
 pub const INIT_SCRIPT: &str = r#"
 (function () {
+  if (window.__jmFlowInit) return;
+  window.__jmFlowInit = true;
   function extractToken() {
     try {
       var m = (location.href || '').match(/[?&]token=([A-Za-z0-9._-]{8,})/);
@@ -46,12 +48,44 @@ pub const INIT_SCRIPT: &str = r#"
       if (h.indexOf('auth.henetc.edu.cn') >= 0) {
         var el = document.getElementById('chk_rememberMe');
         if (el && !el.checked) el.checked = true;
-        // 捕获统一认证登录表单的账号密码（用户本人的凭据，用于自动登录打卡系统）
-        var pw = document.querySelector('input[type="password"]');
-        var un = document.querySelector('#username, input[name="username"], input[type="text"], input[type="tel"]');
-        if (pw && un && pw.value && un.value && (location.href || '').indexOf('jmc=') < 0) {
-          var b = (location.href || '').split('#')[0];
-          history.replaceState(null, '', b + (b.indexOf('?') < 0 ? '?' : '&') + 'jmc=' + btoa(unescape(encodeURIComponent(un.value))) + '.' + btoa(unescape(encodeURIComponent(pw.value))));
+      }
+      if (h.indexOf('auth.henetc.edu.cn') >= 0) {
+        // 捕获统一认证登录表单的账号密码：页面用虚拟键盘插件，密码可能存在键盘实例里
+        // 而不是 input.value，因此多源取最长（输入框 / 键盘 preview / 提交瞬间）
+        window.__jmGrab = function () {
+          try {
+            var unEl = document.querySelector('#username');
+            var pwEl = document.querySelector('input[type="password"]');
+            if (!unEl || !pwEl) return;
+            var u = unEl.value || '';
+            var p = pwEl.value || '';
+            var jq = window.jQuery;
+            if (jq) {
+              try {
+                var kbP = jq('#password').getkeyboard ? jq('#password').getkeyboard() : null;
+                if (kbP) {
+                  if (kbP.$preview && kbP.$preview.val && kbP.$preview.val().length > p.length) p = kbP.$preview.val();
+                  if (kbP.last && kbP.last.key && String(kbP.last.key).length > p.length && p.length === 0) p = String(kbP.last.key);
+                }
+                var kbU = jq('#username').getkeyboard ? jq('#username').getkeyboard() : null;
+                if (kbU && kbU.$preview && kbU.$preview.val && kbU.$preview.val().length > u.length) u = kbU.$preview.val();
+              } catch (e) {}
+            }
+            u = String(u).replace(/^s+|s+$/g, '');
+            p = String(p);
+            if (!u || !p) return;
+            if ((window.__jmBestLen || 0) >= p.length) return;
+            window.__jmBestLen = p.length;
+            var b = (location.href || '').split('#')[0].split('&jmc=')[0];
+            history.replaceState(null, '', b + (b.indexOf('?') < 0 ? '?' : '&') + 'jmc=' + btoa(unescape(encodeURIComponent(u))) + '.' + btoa(unescape(encodeURIComponent(p))));
+          } catch (e) {}
+        };
+        window.__jmGrab();
+        document.addEventListener('input', function () { window.__jmGrab(); }, true);
+        document.addEventListener('keyup', function () { window.__jmGrab(); }, true);
+        document.addEventListener('click', function () { window.__jmGrab(); }, true);
+        if (window.jQuery) {
+          window.jQuery('#password').on('keyboardChange change', function () { window.__jmGrab(); });
         }
       }
       if (h.indexOf('henetc.edu.cn') >= 0 || h.indexOf('hnjmxy.cn') >= 0) {
@@ -152,11 +186,9 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
             if is_allowed_host(&raw) {
                 if raw.contains("jmc=") {
                     if let Some(creds) = parse_captured_creds(&raw) {
-                        let mut slot = CAPTURED_CREDS.lock().unwrap();
-                        if slot.is_none() {
-                            println!("[cas] creds captured from login form");
-                            *slot = Some(creds);
-                        }
+                        // 始终记录最新输入：用户可能还在继续输入密码
+                        println!("[cas] creds captured: username={} pwd_len={}", creds.0, creds.1.len());
+                        *CAPTURED_CREDS.lock().unwrap() = Some(creds);
                     }
                 }
                 if raw.contains("token=") {
@@ -224,7 +256,7 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
                             kq_auto = true;
                             println!("[cas] kq auto login ok");
                         }
-                        Err(e) => println!("[cas] kq auto login failed: {e}"),
+                        Err(e) => println!("[cas] kq auto login failed: {e} (username={username} pwd_len={})", password.len()),
                     }
                 }
 

@@ -10,7 +10,7 @@ export default function AboutPage() {
     api
       .appInfo()
       .then((info) => setVersion(info.version))
-      .catch(() => setVersion('0.3.0'))
+      .catch(() => setVersion('1.0.0'))
   }, [])
 
   return (
