@@ -4,7 +4,7 @@ import { ActionSheet, Button, Dialog, Toast } from 'antd-mobile'
 import WeekGrid from '@/pages/home/WeekGrid'
 import DebugBoundary from '@/pages/home/DebugBoundary'
 import DayView from '@/pages/home/DayView'
-import { displayDays, mergeManual } from '@/pages/home/course-model'
+import { mergeManual } from '@/pages/home/course-model'
 import { api } from '@/api'
 import { storeApi, type CourseSelection } from '@/api/store'
 import type { Course, CourseTable, ManualCourse } from '@/types'
@@ -113,8 +113,8 @@ export default function HomePage() {
   }, [load])
 
   const merged = useMemo(() => (table ? mergeManual(table, manual) : null), [table, manual])
-  const days = useMemo(() => (merged ? displayDays(merged, weekIndex) : []), [merged, weekIndex])
-  const hasAnyCourse = days.some((d) => d.courses.length > 0)
+  // 任意周有课即可用网格视图；某一周没课也照常显示网格，便于切回
+  const hasAnyCourse = merged ? merged.days.some((d) => d.courses.length > 0) : false
 
 
   const onCourseTap = async (c: Course) => {
@@ -223,9 +223,9 @@ export default function HomePage() {
           {!error && table && !hasAnyCourse ? (
             <div className="app-card" style={{ textAlign: 'center', padding: '48px 24px', marginTop: 12 }}>
               <div style={{ fontSize: 40 }}>🗓️</div>
-              <div style={{ marginTop: 12, fontWeight: 600 }}>{weekIndex ? '本周暂无课程' : '暂无课程数据'}</div>
+              <div style={{ marginTop: 12, fontWeight: 600 }}>暂无课程数据</div>
               <div style={{ marginTop: 6, color: 'var(--jm-ink-2)', fontSize: 13 }}>
-                可以在右上角切换周次，或在「管理」中重新选择班级。
+                可以在「管理」中重新选择班级。
               </div>
             </div>
           ) : null}

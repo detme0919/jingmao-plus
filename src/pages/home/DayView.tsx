@@ -201,7 +201,13 @@ export default function DayView({ table, className, realWeek, selected, onSelect
             {courseCount} 节课{isToday && courseCount > 0 ? `，剩 ${remainCount} 节` : ''}
           </span>
           <span className="dv-actions">
-            <a onClick={onOpenManage}>管理</a>
+            <a onClick={onOpenManage} title="管理">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none" />
+              </svg>
+            </a>
           </span>
         </div>
       </header>
