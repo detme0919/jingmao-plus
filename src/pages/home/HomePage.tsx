@@ -27,7 +27,7 @@ export default function HomePage() {
   const [error, setError] = useState('')
   const [stale, setStale] = useState(false)
   const [manageVisible, setManageVisible] = useState(false)
-  const [pickerVisible, setPickerVisible] = useState(false)
+
 
   const loadSeqRef = useRef(0)
   const bound = !!selection || !!auth
@@ -205,10 +205,21 @@ export default function HomePage() {
               >
                 ‹
               </button>
-              <button className="jm-week-current" onClick={() => setPickerVisible(true)} type="button">
-                {weekIndex === 0 ? '全部' : `第${weekIndex}周`}
-                <span className="jm-week-caret">▾</span>
-              </button>
+              <Picker
+                columns={weekOptions}
+                value={[String(weekIndex)]}
+                onConfirm={(v) => {
+                  const idx = weekOptions[0].indexOf(String(v[0]))
+                  if (idx >= 0) setWeekIndex(idx)
+                }}
+              >
+                {(_, actions) => (
+                  <button className="jm-week-current" onClick={() => actions.open()} type="button">
+                    {weekIndex === 0 ? '全部' : `第${weekIndex}周`}
+                    <span className="jm-week-caret">▾</span>
+                  </button>
+                )}
+              </Picker>
               <button
                 className={`jm-week-arrow ${weekIndex >= weeksTotal ? 'is-disabled' : ''}`}
                 onClick={() => stepWeek(1)}
@@ -229,17 +240,6 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-
-          <Picker
-            columns={weekOptions}
-            visible={pickerVisible}
-            onClose={() => setPickerVisible(false)}
-            value={[String(weekIndex)]}
-            onConfirm={(v) => {
-              const idx = weekOptions[0].indexOf(String(v[0]))
-              if (idx >= 0) setWeekIndex(idx)
-            }}
-          />
 
           {loading && !table ? <div className="jm-tip">正在加载课表…</div> : null}
           {stale ? <div className="jm-stale">刷新失败，显示上次加载的课表</div> : null}

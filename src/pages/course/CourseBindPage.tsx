@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Picker, Toast } from 'antd-mobile'
 import SubPage from '@/components/SubPage'
@@ -16,14 +16,22 @@ export default function CourseBindPage() {
   const [loading, setLoading] = useState(false)
   const [loadingCls, setLoadingCls] = useState(false)
 
-  if (colleges.length === 0 && !loading) {
+  useEffect(() => {
+    let alive = true
     setLoading(true)
     api
       .courseColleges()
-      .then(setColleges)
+      .then((items) => {
+        if (alive) setColleges(items)
+      })
       .catch((e) => Toast.show({ content: String(e) }))
-      .finally(() => setLoading(false))
-  }
+      .finally(() => {
+        if (alive) setLoading(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const pickCollege = async (value: string[] | null) => {
     if (!value) return
@@ -66,15 +74,14 @@ export default function CourseBindPage() {
           onConfirm={(val) => pickCollege(val.map(String))}
           value={collegeIdx !== null ? [colleges[collegeIdx].value] : undefined}
         >
-          {(items) =>
-            items[0] ? (
-              <div className="jm-picker-value">{items[0].label}</div>
-            ) : (
-              <div className="jm-picker-value jm-picker-value--empty">
-                {loading ? '加载院系中…' : '点击选择院系'}
-              </div>
-            )
-          }
+          {(items, actions) => (
+            <div
+              className={'jm-picker-value' + (items[0] ? '' : ' jm-picker-value--empty')}
+              onClick={() => actions.open()}
+            >
+              {items[0]?.label ?? (loading ? '加载院系中…' : '点击选择院系')}
+            </div>
+          )}
         </Picker>
 
         <div className="jm-field-label" style={{ marginTop: 16 }}>
@@ -85,15 +92,14 @@ export default function CourseBindPage() {
           onConfirm={(val) => setClassIdx(classes.findIndex((c) => c.value === String(val[0])))}
           value={classIdx !== null ? [classes[classIdx].value] : undefined}
         >
-          {(items) =>
-            items[0] ? (
-              <div className="jm-picker-value">{items[0].label}</div>
-            ) : (
-              <div className="jm-picker-value jm-picker-value--empty">
-                {collegeIdx === null ? '请先选择院系' : loadingCls ? '加载班级中…' : '点击选择班级'}
-              </div>
-            )
-          }
+          {(items, actions) => (
+            <div
+              className={'jm-picker-value' + (items[0] ? '' : ' jm-picker-value--empty')}
+              onClick={() => (collegeIdx === null ? Toast.show({ content: '请先选择院系' }) : actions.open())}
+            >
+              {items[0]?.label ?? (loadingCls ? '加载班级中…' : '点击选择班级')}
+            </div>
+          )}
         </Picker>
 
         <Button

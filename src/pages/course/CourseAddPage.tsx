@@ -61,7 +61,11 @@ export default function CourseAddPage() {
           value={[DAYS[dayIdx]]}
           onConfirm={(v) => setDayIdx(DAYS.indexOf(String(v[0])))}
         >
-          {(items) => <div className="jm-picker-value">{items[0]?.label ?? DAYS[dayIdx]}</div>}
+          {(_, actions) => (
+            <div className="jm-picker-value" onClick={() => actions.open()}>
+              {DAYS[dayIdx]}
+            </div>
+          )}
         </Picker>
         <div className="jm-field-label" style={{ marginTop: 16 }}>
           节次
@@ -71,7 +75,11 @@ export default function CourseAddPage() {
           value={[PERIODS[periodIdx]]}
           onConfirm={(v) => setPeriodIdx(PERIODS.indexOf(String(v[0])))}
         >
-          {(items) => <div className="jm-picker-value">{items[0]?.label ?? PERIODS[periodIdx]}</div>}
+          {(_, actions) => (
+            <div className="jm-picker-value" onClick={() => actions.open()}>
+              {PERIODS[periodIdx]}
+            </div>
+          )}
         </Picker>
         <div className="jm-field-label" style={{ marginTop: 16 }}>
           地点（选填）

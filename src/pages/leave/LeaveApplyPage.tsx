@@ -124,7 +124,13 @@ export default function LeaveApplyPage() {
           max={new Date(Date.now() + 7 * 86400000)}
           onConfirm={(v) => setDate(dayStr(Math.round((v.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000)))}
         >
-          {(item) => <div className="jm-picker-value">{item ? `${item.getFullYear()}-${String(item.getMonth() + 1).padStart(2, '0')}-${String(item.getDate()).padStart(2, '0')}` : (date || '选择日期')}</div>}
+          {(item, actions) => (
+            <div className="jm-picker-value" onClick={() => actions.open()}>
+              {item
+                ? `${item.getFullYear()}-${String(item.getMonth() + 1).padStart(2, '0')}-${String(item.getDate()).padStart(2, '0')}`
+                : (date || '选择日期')}
+            </div>
+          )}
         </DatePicker>
 
         <div className="jm-time-row">
@@ -135,7 +141,11 @@ export default function LeaveApplyPage() {
               value={[startTime]}
               onConfirm={(v) => setStartTime(String(v[0]))}
             >
-              {(items) => <div className="jm-picker-value">{items?.[0]?.label ?? (startTime || '--:--')}</div>}
+              {(_, actions) => (
+                <div className="jm-picker-value" onClick={() => actions.open()}>
+                  {startTime || '--:--'}
+                </div>
+              )}
             </Picker>
           </div>
           <div style={{ flex: 1 }}>
@@ -145,7 +155,11 @@ export default function LeaveApplyPage() {
               value={[endTime]}
               onConfirm={(v) => setEndTime(String(v[0]))}
             >
-              {(items) => <div className="jm-picker-value">{items?.[0]?.label ?? (endTime || '--:--')}</div>}
+              {(_, actions) => (
+                <div className="jm-picker-value" onClick={() => actions.open()}>
+                  {endTime || '--:--'}
+                </div>
+              )}
             </Picker>
           </div>
         </div>
@@ -158,7 +172,11 @@ export default function LeaveApplyPage() {
           value={[TRAFFIC_WAYS[trafficIdx]]}
           onConfirm={(v) => setTrafficIdx(TRAFFIC_WAYS.indexOf(String(v[0])))}
         >
-          {(items) => <div className="jm-picker-value">{items[0]?.label ?? TRAFFIC_WAYS[trafficIdx]}</div>}
+          {(_, actions) => (
+            <div className="jm-picker-value" onClick={() => actions.open()}>
+              {TRAFFIC_WAYS[trafficIdx]}
+            </div>
+          )}
         </Picker>
 
         <div className="jm-field-label" style={{ marginTop: 16 }}>
