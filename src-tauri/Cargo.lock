@@ -1747,6 +1747,7 @@ dependencies = [
 name = "jingmao-plus"
 version = "0.3.0"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "regex",
  "reqwest 0.12.28",

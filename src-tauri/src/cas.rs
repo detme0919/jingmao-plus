@@ -6,7 +6,11 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
+use std::sync::Mutex;
 use std::time::Duration;
+
+use base64::engine::general_purpose::STANDARD as B64;
+use base64::Engine;
 
 use tauri::{AppHandle, Emitter, Manager, Url};
 
@@ -14,6 +18,7 @@ use crate::config::{is_allowed_host, parse_login_token, unify_auth_login_url, PE
 use crate::store::Store;
 
 static LOGIN_ACTIVE: AtomicBool = AtomicBool::new(false);
+static CAPTURED_CREDS: Mutex<Option<(String, String)>> = Mutex::new(None);
 const TIMEOUT_SECS: u64 = 360;
 
 /// 注入/eval 到页面的脚本：
@@ -38,6 +43,17 @@ pub const INIT_SCRIPT: &str = r#"
         var el = document.getElementById('chk_rememberMe');
         if (el && !el.checked) el.checked = true;
       }
+      if (h.indexOf('auth.henetc.edu.cn') >= 0) {
+        var el = document.getElementById('chk_rememberMe');
+        if (el && !el.checked) el.checked = true;
+        // 捕获统一认证登录表单的账号密码（用户本人的凭据，用于自动登录打卡系统）
+        var pw = document.querySelector('input[type="password"]');
+        var un = document.querySelector('#username, input[name="username"], input[type="text"], input[type="tel"]');
+        if (pw && un && pw.value && un.value && (location.href || '').indexOf('jmc=') < 0) {
+          var b = (location.href || '').split('#')[0];
+          history.replaceState(null, '', b + (b.indexOf('?') < 0 ? '?' : '&') + 'jmc=' + btoa(unescape(encodeURIComponent(un.value))) + '.' + btoa(unescape(encodeURIComponent(pw.value))));
+        }
+      }
       if (h.indexOf('henetc.edu.cn') >= 0 || h.indexOf('hnjmxy.cn') >= 0) {
         var t = extractToken();
         var u = location.href || '';
@@ -51,6 +67,26 @@ pub const INIT_SCRIPT: &str = r#"
   }, 800);
 })();
 "#;
+
+/// 从 URL 中解析 jmc= 捕获的账号密码（base64url 两段，点号分隔）
+fn parse_captured_creds(url: &str) -> Option<(String, String)> {
+    use base64::Engine;
+    let part = url.split(&['?', '&'][..]).find_map(|p| p.strip_prefix("jmc="))?;
+    let (u, p) = part.split_once('.')?;
+    let du = B64.decode(u).ok()?;
+    let dp = B64.decode(p).ok()?;
+    let username = String::from_utf8_lossy(&du).into_owned();
+    let password = String::from_utf8_lossy(&dp).into_owned();
+    if username.is_empty() || password.is_empty() {
+        return None;
+    }
+    Some((username, password))
+}
+
+/// 消费捕获的账号密码（取一次）
+fn take_captured_creds() -> Option<(String, String)> {
+    CAPTURED_CREDS.lock().unwrap().take()
+}
 
 fn login_record(token: &str, base: &str) -> serde_json::Value {
     serde_json::json!({
@@ -78,6 +114,7 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
         .to_string();
     let app_origin = app_url.split('#').next().unwrap_or("").to_string();
 
+    CAPTURED_CREDS.lock().unwrap().take();
     LOGIN_ACTIVE.store(true, Ordering::SeqCst);
     let entry: String = unify_auth_login_url(PERREGISTER_URL);
     let entry_url = match entry.parse() {
@@ -113,6 +150,15 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
                 }
             };
             if is_allowed_host(&raw) {
+                if raw.contains("jmc=") {
+                    if let Some(creds) = parse_captured_creds(&raw) {
+                        let mut slot = CAPTURED_CREDS.lock().unwrap();
+                        if slot.is_none() {
+                            println!("[cas] creds captured from login form");
+                            *slot = Some(creds);
+                        }
+                    }
+                }
                 if raw.contains("token=") {
                     if let Some((token, base)) = parse_login_token(&raw) {
                         println!("[cas] token captured from url");
@@ -147,15 +193,43 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
     let outcome = rx.recv_timeout(Duration::from_secs(TIMEOUT_SECS + 5));
     LOGIN_ACTIVE.store(false, Ordering::SeqCst);
 
+    let mut kq_auto = false;
     let result = match outcome {
         Ok(Ok(json)) => match serde_json::from_str::<serde_json::Value>(&json) {
-            Ok(record) => {
+            Ok(mut record) => {
                 let store = app.state::<Store>();
-                let saved = store.set("login_token", record.clone());
-                match saved {
-                    Ok(()) => Ok(record),
-                    Err(e) => Err(e),
+                if let Err(e) = store.set("login_token", record.clone()) {
+                    return Err(e);
                 }
+
+                // 自动登录打卡系统：账号密码与统一认证一致（失败静默，保留手动登录兜底）
+                if let Some((username, password)) = take_captured_creds() {
+                    let openid = match store.get("kq_openid") {
+                        Ok(Some(v)) if v.is_string() => v.as_str().unwrap().to_string(),
+                        _ => crate::store::generate_openid(),
+                    };
+                    let _ = store.set("kq_openid", serde_json::json!(openid));
+                    match crate::kq::login(&username, &password, &openid).await {
+                        Ok(res) => {
+                            let now = chrono::Utc::now().timestamp_millis();
+                            let expires_at = res.expires_at.unwrap_or(now + 24 * 3600 * 1000);
+                            let _ = store.set(
+                                "kq_auth",
+                                serde_json::json!({"token": res.token, "savedAt": now, "expiresAt": expires_at}),
+                            );
+                            let _ = store.set(
+                                "kq_cred",
+                                serde_json::json!({"username": username, "pwd": password, "openid": openid}),
+                            );
+                            kq_auto = true;
+                            println!("[cas] kq auto login ok");
+                        }
+                        Err(e) => println!("[cas] kq auto login failed: {e}"),
+                    }
+                }
+
+                record["kqAutoLogin"] = serde_json::json!(kq_auto);
+                Ok(record)
             }
             Err(e) => Err(format!("登录结果解析失败：{e}")),
         },

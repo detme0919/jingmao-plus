@@ -80,6 +80,7 @@ export interface Person {
 
 export interface TokenRecord {
   token: string
+  kqAutoLogin?: boolean
   url: string
   expire: number
   savedAt: number

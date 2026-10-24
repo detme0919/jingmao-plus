@@ -35,7 +35,7 @@ export default function ProfilePage() {
     try {
       const record = await api.casOpenLogin()
       await storeApi.setLoginToken(record)
-      Toast.show({ content: '登录成功' })
+      Toast.show({ content: record.kqAutoLogin ? '登录成功，打卡考勤已自动登录' : '登录成功' })
       try {
         await api.personDetail()
       } catch {
