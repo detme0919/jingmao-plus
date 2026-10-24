@@ -1,0 +1,270 @@
+import { useMemo } from 'react'
+import type { Course, CourseTable } from '@/types'
+import { coursesForWeekClient } from '@/pages/home/course-week'
+import { blockStyle } from '@/pages/home/course-model'
+import { PERIOD_TIMES } from '@/pages/home/course-model'
+import { DotLoading, Picker } from 'antd-mobile'
+import './week-grid.css'
+
+const WEEKDAY = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const pad = (n: number) => String(n).padStart(2, '0')
+
+function addDays(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
+}
+function sameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+function mondayOf(d: Date): Date {
+  return addDays(d, -((d.getDay() + 6) % 7))
+}
+function parseHM(hm: string): number {
+  const [h, m] = hm.split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+function hm(mins: number) {
+  return `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`
+}
+
+/** 单节次时间：由连堂节次时间均分（45 分钟课 + 10 分钟休息） */
+const singleTime: Record<number, [number, number]> = {}
+for (const [label, range] of Object.entries(PERIOD_TIMES)) {
+  const m = label.match(/(\d+)-(\d+)/)
+  if (!m) continue
+  const a = Number(m[1])
+  const s = parseHM(range.split('-')[0])
+  const e = parseHM(range.split('-')[1])
+  singleTime[a] = [s, s + 45]
+  singleTime[a + 1] = [s + 55, e]
+}
+
+/** 块高度 = 跨越的每节行高 + 中途的分隔带（午休/晚休） */
+function blockHeight(s: number, e: number): number {
+  return (e - s + 1) * 58 - 8
+}
+
+function courseSpan(c: Course): [number, number] {
+  const m = c.period.match(/(\d+)-(\d+)/)
+  if (m) return [Number(m[1]), Number(m[2])]
+  const single = c.period.match(/(\d+)/)
+  if (single) return [Number(single[1]), Number(single[1])]
+  return [99, 99]
+}
+
+type Row = number | 'lunch' | 'dinner'
+
+interface WeekGridProps {
+  loading?: boolean
+  table: CourseTable
+  weekIndex: number
+  realWeek: number
+  weeksTotal: number
+  onWeekChange: (w: number) => void
+  onOpenDay: () => void
+  onOpenManage: () => void
+  onRefresh: () => void
+  onCourseTap: (c: Course) => void
+}
+
+/** 周网格视图（WakeUp 风格）：单节次行 + 跨节课程块 + 午休/晚休 + 日期表头 */
+export default function WeekGrid({
+  loading,
+  table,
+  weekIndex,
+  realWeek,
+  weeksTotal,
+  onWeekChange,
+  onOpenDay,
+  onOpenManage,
+  onRefresh,
+  onCourseTap
+}: WeekGridProps) {
+  const today = useMemo(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  }, [])
+
+  /** 当前周各天的日期（weekIndex 相对 realWeek 偏移） */
+  const weekDates = useMemo(() => {
+    const monday = mondayOf(today)
+    const offset = weekIndex > 0 && realWeek > 0 ? (weekIndex - realWeek) * 7 : 0
+    return Array.from({ length: 7 }, (_, i) => addDays(monday, offset + i))
+  }, [today, weekIndex, realWeek])
+
+  const columns = useMemo(() => {
+    // 周一~周五固定，周六/日当周有课才显示
+    const base = [1, 2, 3, 4, 5]
+    const weekend: number[] = []
+    for (const d of [6, 7]) {
+      const label = WEEKDAY[d]
+      const day = table.days.find((x) => x.label === label)
+      if (day && coursesForWeekClient(day.courses, weekIndex).length) base.push(d)
+      void weekend
+    }
+    return base
+  }, [table, weekIndex])
+
+  const weekCourses = useMemo(() => {
+    const map = new Map<string, Course[]>()
+    for (const d of table.days) {
+      map.set(d.label, coursesForWeekClient(d.courses, weekIndex))
+    }
+    return map
+  }, [table, weekIndex])
+
+  const maxPeriod = useMemo(() => {
+    let max = 10
+    for (const list of weekCourses.values()) {
+      for (const c of list) {
+        const [, end] = courseSpan(c)
+        if (end > max) max = end
+      }
+    }
+    return max
+  }, [weekCourses])
+
+  const rows = useMemo(() => {
+    // 作息：午休在第 4 节后（11:50-14:40），晚休在第 8 节后（18:20-19:00）
+    const list: Row[] = []
+    for (let p = 1; p <= maxPeriod; p++) {
+      list.push(p)
+      if (p === 4 && maxPeriod >= 5) list.push('lunch')
+      if (p === 8 && maxPeriod >= 9) list.push('dinner')
+    }
+    return list
+  }, [maxPeriod])
+
+  const weekOptions = useMemo(() => {
+    const list: string[] = []
+    for (let i = 0; i <= weeksTotal; i++) list.push(i === 0 ? '全部' : `第${i}周`)
+    return [list]
+  }, [weeksTotal])
+
+  const titleText = weekIndex === 0 ? '全部' : `第${weekIndex}周`
+
+  return (
+    <div className="wk">
+      <header className="wk-top">
+        <button
+          className={`wk-arrow ${weekIndex === 0 ? 'is-disabled' : ''}`}
+          onClick={() => onWeekChange(Math.max(0, weekIndex - 1))}
+          type="button"
+        >
+          ‹
+        </button>
+        <Picker
+          columns={weekOptions}
+          value={[titleText]}
+          onConfirm={(v) => {
+            const idx = weekOptions[0].indexOf(String(v[0]))
+            if (idx >= 0) onWeekChange(idx)
+          }}
+        >
+          {(_, actions) => (
+            <button className="wk-title" onClick={() => actions.open()} type="button">
+              {titleText}
+              {loading ? <DotLoading color="primary" /> : null}
+            </button>
+          )}
+        </Picker>
+        <button
+          className={`wk-arrow ${weekIndex >= weeksTotal ? 'is-disabled' : ''}`}
+          onClick={() => onWeekChange(Math.min(weeksTotal, weekIndex + 1))}
+          type="button"
+        >
+          ›
+        </button>
+        <span className="wk-top-spacer" />
+        <button className="wk-icon" onClick={onRefresh} type="button" title="刷新">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+            <path d="M20 11.5a8 8 0 1 0-2.2 6" />
+            <path d="M20 4v7h-7" />
+          </svg>
+        </button>
+        <button className="wk-icon" onClick={onOpenDay} type="button" title="日视图">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+            <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+            <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
+          </svg>
+        </button>
+        <button className="wk-icon" onClick={onOpenManage} type="button" title="管理">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+            <circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+            <circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none" />
+          </svg>
+        </button>
+      </header>
+
+      <div className="wk-head">
+        <div className="wk-head-time" />
+        {columns.map((d) => {
+          const date = weekDates[d]
+          const isToday = sameDay(date, today)
+          const past = date < today
+          return (
+            <div key={d} className={`wk-head-day ${isToday ? 'is-today' : ''} ${past ? 'is-past' : ''}`}>
+              <span className="wk-head-name">{WEEKDAY[d].replace('周', '周')}</span>
+              <span className="wk-head-date">
+                {pad(date.getMonth() + 1)}/{pad(date.getDate())}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="wk-body">
+        {rows.map((row) =>
+          typeof row === 'string' ? (
+            <div key={row} className="wk-break">{row === 'lunch' ? '午休' : '晚休'}</div>
+          ) : (
+            <div key={row} className="wk-row">
+              <div className="wk-time">
+                <span className="wk-time-n">{row}</span>
+                <span className="wk-time-range">
+                  {hm(singleTime[row]?.[0] ?? 0)}
+                  <br />
+                  {hm(singleTime[row]?.[1] ?? 0)}
+                </span>
+              </div>
+              {columns.map((d) => {
+                const label = WEEKDAY[d]
+                const courses = weekCourses.get(label) ?? []
+                const starts = courses.filter((c) => courseSpan(c)[0] === row)
+                const date = weekDates[d]
+                const past = date < today
+                return (
+                  <div key={d} className={`wk-cell ${past ? 'is-past' : ''}`}>
+                    {starts.map((c, i) => {
+                      const [s, e] = courseSpan(c)
+                      const height = blockHeight(s, e)
+                      const palette = blockStyle(c)
+                      return (
+                        <div
+                          key={c.id || c.name + i}
+                          className="wk-block"
+                          style={{
+                            color: palette.color,
+                            height,
+                            // 不透明底色：半透明色叠白，避免午休/晚休分隔带透出
+                            background: `linear-gradient(0deg, ${palette.background}, ${palette.background}) #ffffff`
+                          }}
+                          onClick={() => onCourseTap(c)}
+                        >
+                          <div className="wk-block-name">{c.name}</div>
+                          {c.room ? <div className="wk-block-room">@{c.room}</div> : null}
+                          {c.teacher ? <div className="wk-block-teacher">{c.teacher}</div> : null}
+                          <span className="wk-block-dot" />
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  )
+}

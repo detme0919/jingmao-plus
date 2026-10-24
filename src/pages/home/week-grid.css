@@ -1,0 +1,200 @@
+/* 周网格视图（WakeUp 风格） */
+.wk {
+  padding: 0 12px 12px;
+}
+
+.wk-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 10px;
+}
+
+.wk-title {
+  border: none;
+  background: transparent;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--jm-ink);
+  padding: 6px 10px;
+}
+
+.wk-arrow {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--jm-ink-2);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.wk-arrow.is-disabled {
+  color: var(--jm-ink-3);
+  opacity: 0.5;
+}
+
+.wk-top-spacer {
+  flex: 1;
+}
+
+.wk-icon {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--jm-ink-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.wk-icon:active {
+  background: var(--jm-line);
+}
+
+/* 表头：周几 + 日期 */
+.wk-head {
+  display: flex;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--jm-line);
+}
+
+.wk-head-time {
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.wk-head-day {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 0;
+}
+
+.wk-head-name {
+  font-size: 12px;
+  color: var(--jm-ink-2);
+}
+
+.wk-head-date {
+  font-size: 10px;
+  color: var(--jm-ink-3);
+}
+
+.wk-head-day.is-today .wk-head-name,
+.wk-head-day.is-today .wk-head-date {
+  color: var(--jm-brand);
+  font-weight: 700;
+}
+
+.wk-head-day.is-past {
+  opacity: 0.55;
+}
+
+/* 行 */
+.wk-row {
+  display: flex;
+  height: 58px;
+}
+
+.wk-time {
+  width: 44px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.wk-time-n {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--jm-ink-2);
+}
+
+.wk-time-range {
+  font-size: 9px;
+  line-height: 1.35;
+  color: var(--jm-ink-3);
+  text-align: center;
+}
+
+.wk-row {
+  border-bottom: 1px solid var(--jm-line);
+}
+
+.wk-cell {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 3px;
+}
+
+.wk-cell.is-past {
+  opacity: 0.5;
+}
+
+/* 跨节课程块 */
+.wk-block {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  border-radius: 10px;
+  padding: 6px 6px 14px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.wk-block-name {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: break-all;
+}
+
+.wk-block-room {
+  margin-top: 2px;
+  font-size: 10px;
+  opacity: 0.85;
+  word-break: break-all;
+}
+
+.wk-block-teacher {
+  margin-top: 1px;
+  font-size: 10px;
+  opacity: 0.7;
+  word-break: break-all;
+}
+
+.wk-block-dot {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+/* 午休 / 晚休分隔带 */
+.wk-break {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--jm-ink-3);
+  background: var(--jm-line);
+  opacity: 0.7;
+  border-radius: 6px;
+  margin: 2px 0;
+}

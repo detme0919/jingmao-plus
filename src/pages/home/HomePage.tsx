@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ActionSheet, Button, Dialog, DotLoading, Picker, Toast } from 'antd-mobile'
+import { ActionSheet, Button, Dialog, Toast } from 'antd-mobile'
 import PageShell from '@/components/PageShell'
-import CourseGrid from '@/pages/home/CourseGrid'
+import WeekGrid from '@/pages/home/WeekGrid'
 import DayView from '@/pages/home/DayView'
-import { displayDays, gridPeriods, mergeManual } from '@/pages/home/course-model'
+import { displayDays, mergeManual } from '@/pages/home/course-model'
 import { api } from '@/api'
 import { storeApi, type CourseSelection } from '@/api/store'
 import type { Course, CourseTable, ManualCourse } from '@/types'
@@ -114,19 +114,8 @@ export default function HomePage() {
 
   const merged = useMemo(() => (table ? mergeManual(table, manual) : null), [table, manual])
   const days = useMemo(() => (merged ? displayDays(merged, weekIndex) : []), [merged, weekIndex])
-  const periods = useMemo(() => gridPeriods(days), [days])
   const hasAnyCourse = days.some((d) => d.courses.length > 0)
-  const weekOptions = useMemo(() => {
-    const list: string[][] = []
-    for (let i = 0; i <= weeksTotal; i++) list.push([i === 0 ? '全部' : `第${i}周`])
-    return [list.map((c) => c[0])]
-  }, [weeksTotal])
 
-  const stepWeek = (delta: number) => {
-    const next = weekIndex + delta
-    if (next < 0 || next > weeksTotal) return
-    setWeekIndex(next)
-  }
 
   const onCourseTap = async (c: Course) => {
     if (c.manual) {
@@ -138,12 +127,25 @@ export default function HomePage() {
       }
       return
     }
-    const lines: string[] = []
-    if (c.period) lines.push(`节次：${c.period}`)
-    if (c.room) lines.push(`地点：${c.room}`)
-    if (c.teacher) lines.push(`教师：${c.teacher}`)
-    if (c.weeksText) lines.push(`周次：${c.weeksText.replace(/周/g, '')}周`)
-    Dialog.alert({ title: c.name, content: lines.join('<br/>'), confirmText: '知道了' })
+    const rows: [string, string][] = []
+    if (c.period) rows.push(['节次', c.period])
+    if (c.room) rows.push(['地点', c.room])
+    if (c.teacher) rows.push(['教师', c.teacher])
+    if (c.weeksText) rows.push(['周次', c.weeksText])
+    Dialog.alert({
+      title: c.name,
+      content: (
+        <div>
+          {rows.map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', padding: '4px 0', fontSize: 14 }}>
+              <span style={{ width: 64, flexShrink: 0, color: 'var(--jm-ink-3)' }}>{k}</span>
+              <span style={{ flex: 1, color: 'var(--jm-ink)' }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      ),
+      confirmText: '知道了'
+    })
   }
 
   const unbind = async () => {
@@ -211,55 +213,6 @@ export default function HomePage() {
         />
       ) : (
         <>
-          <div className="jm-weekbar">
-            <div className="jm-week-nav">
-              <button
-                className={`jm-week-arrow ${weekIndex === 0 ? 'is-disabled' : ''}`}
-                onClick={() => stepWeek(-1)}
-                type="button"
-              >
-                ‹
-              </button>
-              <Picker
-                columns={weekOptions}
-                value={[String(weekIndex)]}
-                onConfirm={(v) => {
-                  const idx = weekOptions[0].indexOf(String(v[0]))
-                  if (idx >= 0) setWeekIndex(idx)
-                }}
-              >
-                {(_, actions) => (
-                  <button className="jm-week-current" onClick={() => actions.open()} type="button">
-                    {weekIndex === 0 ? '全部' : `第${weekIndex}周`}
-                    <span className="jm-week-caret">▾</span>
-                  </button>
-                )}
-              </Picker>
-              <button
-                className={`jm-week-arrow ${weekIndex >= weeksTotal ? 'is-disabled' : ''}`}
-                onClick={() => stepWeek(1)}
-                type="button"
-              >
-                ›
-              </button>
-            </div>
-            <div className="jm-week-actions">
-              <button className="jm-chip jm-chip--brand" onClick={() => setWeekIndex(realWeek > 0 ? realWeek : 0)} type="button">
-                本周
-              </button>
-              <button className="jm-chip" onClick={() => load(true)} type="button">
-                {loading ? <DotLoading color="primary" /> : '刷新'}
-              </button>
-              <button className="jm-chip" onClick={() => setViewMode('day')} type="button">
-                日
-              </button>
-              <button className="jm-chip jm-chip--solid" onClick={() => setManageVisible(true)} type="button">
-                管理
-              </button>
-            </div>
-          </div>
-
-          {loading && !table ? <div className="jm-tip">正在加载课表…</div> : null}
           {stale ? <div className="jm-stale">刷新失败，显示上次加载的课表</div> : null}
           {error ? (
             <div className="jm-tip jm-tip--error">
@@ -274,13 +227,24 @@ export default function HomePage() {
               <div style={{ fontSize: 40 }}>🗓️</div>
               <div style={{ marginTop: 12, fontWeight: 600 }}>{weekIndex ? '本周暂无课程' : '暂无课程数据'}</div>
               <div style={{ marginTop: 6, color: 'var(--jm-ink-2)', fontSize: 13 }}>
-                可以切换其他周次，或在「管理」中重新选择班级。
+                可以在右上角切换周次，或在「管理」中重新选择班级。
               </div>
             </div>
           ) : null}
 
           {table && hasAnyCourse && !error ? (
-            <CourseGrid days={days} periods={periods} week={weekIndex} realWeek={realWeek} onCourseTap={onCourseTap} />
+            <WeekGrid
+              loading={loading}
+              table={merged!}
+              weekIndex={weekIndex}
+              realWeek={realWeek}
+              weeksTotal={weeksTotal}
+              onWeekChange={setWeekIndex}
+              onOpenDay={() => setViewMode('day')}
+              onOpenManage={() => setManageVisible(true)}
+              onRefresh={() => load(true)}
+              onCourseTap={onCourseTap}
+            />
           ) : null}
         </>
       )}
