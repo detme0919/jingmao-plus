@@ -5,6 +5,7 @@ import { blockStyle } from '@/pages/home/course-model'
 import { PERIOD_TIMES } from '@/pages/home/course-model'
 import { DotLoading, Picker } from 'antd-mobile'
 import './week-grid.css'
+import './day-view.css'
 
 const WEEKDAY = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -54,6 +55,7 @@ function courseSpan(c: Course): [number, number] {
 type Row = number | 'lunch' | 'dinner'
 
 interface WeekGridProps {
+  className: string
   loading?: boolean
   table: CourseTable
   weekIndex: number
@@ -68,6 +70,7 @@ interface WeekGridProps {
 
 /** 周网格视图（WakeUp 风格）：单节次行 + 跨节课程块 + 午休/晚休 + 日期表头 */
 export default function WeekGrid({
+  className,
   loading,
   table,
   weekIndex,
@@ -84,25 +87,13 @@ export default function WeekGrid({
     return new Date(d.getFullYear(), d.getMonth(), d.getDate())
   }, [])
 
-  /** 当前周各天的日期（weekIndex 相对 realWeek 偏移） */
-  const weekDates = useMemo(() => {
-    const monday = mondayOf(today)
-    const offset = weekIndex > 0 && realWeek > 0 ? (weekIndex - realWeek) * 7 : 0
-    return Array.from({ length: 7 }, (_, i) => addDays(monday, offset + i))
-  }, [today, weekIndex, realWeek])
+  /** 周一~周日（d=1..7）对应日期（weekIndex 相对 realWeek 偏移） */
+  const monday = useMemo(() => mondayOf(today), [today])
+  const offset = weekIndex > 0 && realWeek > 0 ? (weekIndex - realWeek) * 7 : 0
+  const dateOf = (d: number) => addDays(monday, offset + d - 1)
 
-  const columns = useMemo(() => {
-    // 周一~周五固定，周六/日当周有课才显示
-    const base = [1, 2, 3, 4, 5]
-    const weekend: number[] = []
-    for (const d of [6, 7]) {
-      const label = WEEKDAY[d]
-      const day = table.days.find((x) => x.label === label)
-      if (day && coursesForWeekClient(day.courses, weekIndex).length) base.push(d)
-      void weekend
-    }
-    return base
-  }, [table, weekIndex])
+  // 固定周一~周日七列（与日视图日期条一致）
+  const columns = [1, 2, 3, 4, 5, 6, 7]
 
   const weekCourses = useMemo(() => {
     const map = new Map<string, Course[]>()
@@ -141,70 +132,72 @@ export default function WeekGrid({
   }, [weeksTotal])
 
   const titleText = weekIndex === 0 ? '全部' : `第${weekIndex}周`
+  const totalCourses = useMemo(
+    () => [...weekCourses.values()].reduce((n, list) => n + list.length, 0),
+    [weekCourses]
+  )
 
   return (
     <div className="wk">
-      <header className="wk-top">
-        <button
-          className={`wk-arrow ${weekIndex === 0 ? 'is-disabled' : ''}`}
-          onClick={() => onWeekChange(Math.max(0, weekIndex - 1))}
-          type="button"
-        >
-          ‹
-        </button>
-        <Picker
-          columns={weekOptions}
-          value={[titleText]}
-          onConfirm={(v) => {
-            const idx = weekOptions[0].indexOf(String(v[0]))
-            if (idx >= 0) onWeekChange(idx)
-          }}
-        >
-          {(_, actions) => (
-            <button className="wk-title" onClick={() => actions.open()} type="button">
-              {titleText}
-              {loading ? <DotLoading color="primary" /> : null}
-            </button>
-          )}
-        </Picker>
-        <button
-          className={`wk-arrow ${weekIndex >= weeksTotal ? 'is-disabled' : ''}`}
-          onClick={() => onWeekChange(Math.min(weeksTotal, weekIndex + 1))}
-          type="button"
-        >
-          ›
-        </button>
-        <span className="wk-top-spacer" />
-        <button className="wk-icon" onClick={onRefresh} type="button" title="刷新">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
-            <path d="M20 11.5a8 8 0 1 0-2.2 6" />
-            <path d="M20 4v7h-7" />
-          </svg>
-        </button>
-        <button className="wk-icon" onClick={onOpenDay} type="button" title="日视图">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
-            <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
-            <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
-          </svg>
-        </button>
-        <button className="wk-icon" onClick={onOpenManage} type="button" title="管理">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
-            <circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" />
-            <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
-            <circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none" />
-          </svg>
-        </button>
+      <header className="dv-header">
+        <div className="dv-kicker">{className}</div>
+        <div className="dv-date-row">
+          <button
+            className={`wk-arrow ${weekIndex === 0 ? 'is-disabled' : ''}`}
+            onClick={() => onWeekChange(Math.max(0, weekIndex - 1))}
+            type="button"
+          >
+            ‹
+          </button>
+          <Picker
+            columns={weekOptions}
+            value={[titleText]}
+            onConfirm={(v) => {
+              const idx = weekOptions[0].indexOf(String(v[0]))
+              if (idx >= 0) onWeekChange(idx)
+            }}
+          >
+            {(_, actions) => (
+              <button className="dv-date dv-date--btn" onClick={() => actions.open()} type="button">
+                {titleText}
+                {loading ? <DotLoading color="primary" /> : null}
+              </button>
+            )}
+          </Picker>
+          <button
+            className={`wk-arrow ${weekIndex >= weeksTotal ? 'is-disabled' : ''}`}
+            onClick={() => onWeekChange(Math.min(weeksTotal, weekIndex + 1))}
+            type="button"
+          >
+            ›
+          </button>
+          <span className="dv-actions">
+            <a onClick={onRefresh} title="刷新">刷新</a>
+            <a onClick={onOpenDay} title="日视图">日视图</a>
+            <a onClick={onOpenManage}>管理</a>
+          </span>
+        </div>
+        <div className="dv-meta">
+          <span>{totalCourses} 节课</span>
+          {weekIndex > 0 ? (
+            <>
+              <i />
+              <span>{weekIndex % 2 === 1 ? '单周' : '双周'}</span>
+            </>
+          ) : null}
+        </div>
       </header>
 
+      <div className="wk-card">
       <div className="wk-head">
         <div className="wk-head-time" />
         {columns.map((d) => {
-          const date = weekDates[d]
+          const date = dateOf(d)
           const isToday = sameDay(date, today)
           const past = date < today
           return (
             <div key={d} className={`wk-head-day ${isToday ? 'is-today' : ''} ${past ? 'is-past' : ''}`}>
-              <span className="wk-head-name">{WEEKDAY[d].replace('周', '周')}</span>
+              <span className="wk-head-name">{WEEKDAY[d % 7]}</span>
               <span className="wk-head-date">
                 {pad(date.getMonth() + 1)}/{pad(date.getDate())}
               </span>
@@ -228,10 +221,10 @@ export default function WeekGrid({
                 </span>
               </div>
               {columns.map((d) => {
-                const label = WEEKDAY[d]
+                const label = WEEKDAY[d % 7]
                 const courses = weekCourses.get(label) ?? []
                 const starts = courses.filter((c) => courseSpan(c)[0] === row)
-                const date = weekDates[d]
+                const date = dateOf(d)
                 const past = date < today
                 return (
                   <div key={d} className={`wk-cell ${past ? 'is-past' : ''}`}>
@@ -264,6 +257,7 @@ export default function WeekGrid({
             </div>
           )
         )}
+      </div>
       </div>
     </div>
   )

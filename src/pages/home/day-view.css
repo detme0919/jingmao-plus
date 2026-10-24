@@ -12,6 +12,24 @@
   color: var(--jm-ink-3);
 }
 
+.dv-date-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dv-date--btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+}
+
+.dv-actions a {
+  margin-left: 14px;
+}
+
 .dv-date {
   margin: 4px 0 0;
   font-size: 26px;

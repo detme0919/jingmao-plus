@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ActionSheet, Button, Dialog, Toast } from 'antd-mobile'
-import PageShell from '@/components/PageShell'
 import WeekGrid from '@/pages/home/WeekGrid'
+import DebugBoundary from '@/pages/home/DebugBoundary'
 import DayView from '@/pages/home/DayView'
 import { displayDays, mergeManual } from '@/pages/home/course-model'
 import { api } from '@/api'
@@ -183,8 +183,6 @@ export default function HomePage() {
     }
   }
 
-  const isDayView = bound && viewMode === 'day' && !!table && !!merged
-
   const content = (
     <>
       {!bound ? (
@@ -233,7 +231,9 @@ export default function HomePage() {
           ) : null}
 
           {table && hasAnyCourse && !error ? (
+            <DebugBoundary>
             <WeekGrid
+              className={selection?.className || table.className || '班级课表'}
               loading={loading}
               table={merged!}
               weekIndex={weekIndex}
@@ -245,6 +245,7 @@ export default function HomePage() {
               onRefresh={() => load(true)}
               onCourseTap={onCourseTap}
             />
+            </DebugBoundary>
           ) : null}
         </>
       )}
@@ -268,19 +269,5 @@ export default function HomePage() {
     </>
   )
 
-  if (isDayView) {
-    return <div className="app-page">{content}</div>
-  }
-  return (
-    <PageShell
-      kicker="TIMETABLE"
-      title="课程表"
-      subtitle={
-        (selection?.className || table?.className || (auth ? '链接课表' : '班级课表')) +
-        (weekIndex ? ` · 第${weekIndex}周` : '')
-      }
-    >
-      {content}
-    </PageShell>
-  )
+  return <div className="app-page">{content}</div>
 }
