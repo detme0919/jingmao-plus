@@ -774,19 +774,27 @@ http://weixin.henetc.edu.cn/userreg_student.aspx
 
 ## 11. 参考实现
 
-| 模块 | 文件 |
-| --- | --- |
-| 学校域名与登录链接 | `src/config/school.js` |
-| 出校登记链接/token | `src/utils/link.js` |
-| 出校登记接口 | `src/utils/leave.js` |
-| 个人信息与头像 | `src/utils/person.js` |
-| 考勤登录/凭证/打卡 | `src/utils/kq.js` |
-| 课表查询/缓存/当前周 | `src/utils/course.js` |
-| 课表 HTML 解析 | `src/utils/course-parse.js` |
-| 缴费链接（历史） | 已移除，原 `src/utils/utility.js` |
-| 主题配色 | `src/utils/theme.js` |
-| 通用 WebView | `src/pages/webview/webview.vue` |
+> 2026-10-24 起项目从 uni-app 迁移到 **Tauri 2 + Rust + React**（旧版保留在 git 标签 `uniapp-v0.2.0`）。
+> 所有接口调用改为在 Rust 侧发起（reqwest，表单编码，公共参数 pid=yyzx 等），前端通过 Tauri command 调用；
+> 统一认证登录改为应用内登录子窗口（Rust 监听跳转抓取 token，白名单仅学校域名）；打卡定位由
+> tauri-plugin-geolocation 取 WGS-84 后在 Rust 内转换为 GCJ-02。token/凭证保存于应用私有目录
+> `jm_store.json`（键语义沿用下文第 8 节的 jm_* 命名）。
+
+| 模块 | Rust 文件（现行） | 旧版文件（uniapp-v0.2.0） |
+| --- | --- | --- |
+| 学校域名/端点/白名单/登录链接构造 | `src-tauri/src/config.rs` | `src/config/school.js` |
+| 登记链接/token | `src-tauri/src/commands.rs`（parse_register_link） | `src/utils/link.js` |
+| 出校登记接口 | `src-tauri/src/leave.rs` | `src/utils/leave.js` |
+| 个人信息 | `src-tauri/src/person.rs` | `src/utils/person.js` |
+| 考勤登录/凭证/打卡 | `src-tauri/src/kq.rs` | `src/utils/kq.js` |
+| 课表查询/缓存/当前周 | `src-tauri/src/course.rs` + `store.rs` | `src/utils/course.js` |
+| 课表 HTML 解析 | `src-tauri/src/course_parse.rs` | `src/utils/course-parse.js` |
+| 定位与 GCJ-02 转换 | `src-tauri/src/geo.rs` / `geo_device.rs` | `uni.getLocation` |
+| 统一认证登录窗口 | `src-tauri/src/cas.rs` | `src/pages/webview/webview.vue` |
+| 本机存储 | `src-tauri/src/store.rs` | uni storage（jm_* 键） |
+| 缴费链接（历史） | 已移除，原 `src/utils/utility.js` | — |
+| 前端页面 | `src/pages/**`（React） | `src/pages/**`（Vue） |
 
 ---
 
-*最后更新：2026-10-22*
+*最后更新：2026-10-24*
