@@ -47,7 +47,11 @@ export default function HomePage() {
     setManual((await storeApi.getManualCourses()) ?? [])
 
     const cached = await storeApi.getCourseCache()
-    const cacheMatches = !!cached && Array.isArray(cached.days) && cached.classValue === sel?.classValue
+    const cacheMatches =
+      !!cached &&
+      Array.isArray(cached.days) &&
+      cached.classValue === sel?.classValue &&
+      cached.pv === 2
     if (cacheMatches && cached) {
       setTable(cached)
       if (typeof cached.realWeek === 'number') setRealWeek(cached.realWeek)

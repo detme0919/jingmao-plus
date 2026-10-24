@@ -128,7 +128,9 @@ export default function ToolkitPage() {
                 Toast.show({ content: '登录成功' })
                 refresh()
               } catch (e) {
-                if (String(e) !== '__cancelled__') Dialog.alert({ title: '登录失败', content: String(e) })
+                const msg = String(e)
+                if (msg !== '__cancelled__' && msg !== '__active__')
+                  Dialog.alert({ title: '登录失败', content: msg })
               }
             }}
           >

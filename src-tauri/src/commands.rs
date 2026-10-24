@@ -63,6 +63,7 @@ pub async fn course_query_table(
     let table = crate::course::query_table(&college_value, &class_value).await?;
     let mut record = serde_json::to_value(&table).map_err(|e| e.to_string())?;
     record["classValue"] = json!(class_value);
+    record["pv"] = json!(2);
     record["savedAt"] = json!(now_ms());
     store.set("course_cache", record.clone())?;
     Ok(record)
@@ -75,6 +76,7 @@ pub async fn course_fetch_by_link(store: State<'_, Store>, url: String) -> Resul
     }
     let table = crate::course::fetch_by_link(&url).await?;
     let mut record = serde_json::to_value(&table).map_err(|e| e.to_string())?;
+    record["pv"] = json!(2);
     record["savedAt"] = json!(now_ms());
     store.set("course_cache", record.clone())?;
     Ok(record)

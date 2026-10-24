@@ -20,6 +20,7 @@ export interface CourseDay {
 
 export interface CourseTable {
   className: string
+  pv?: number
   days: CourseDay[]
   classValue?: string
   savedAt?: number

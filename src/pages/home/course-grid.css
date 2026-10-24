@@ -3,7 +3,7 @@
   background: var(--jm-card);
   border-radius: var(--jm-radius-card);
   box-shadow: var(--jm-shadow-card);
-  padding: 14px 8px 12px;
+  padding: 12px 6px 10px;
   margin-top: 12px;
 }
 
@@ -15,7 +15,7 @@
 
 .cg-corner,
 .cg-time {
-  width: 52px;
+  width: 46px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -101,8 +101,8 @@
 .cg-cell {
   flex: 1;
   min-width: 0;
-  min-height: 74px;
-  padding: 4px 3px;
+  min-height: 64px;
+  padding: 3px 2px;
   display: flex;
   flex-direction: column;
 }
@@ -118,7 +118,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 6px 6px;
+  padding: 5px 4px;
   border-left: 3px solid;
   border-radius: 8px;
   overflow: hidden;
@@ -128,15 +128,20 @@
 .cg-block-name {
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.3;
   word-break: break-all;
 }
 
 .cg-block-room {
-  margin-top: 3px;
+  margin-top: 2px;
   font-size: 10px;
+  line-height: 1.35;
   opacity: 0.75;
   word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .cg-scroll-hint {

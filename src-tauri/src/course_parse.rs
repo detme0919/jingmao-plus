@@ -177,7 +177,63 @@ pub fn parse_course_html(src: &str) -> CourseTable {
         });
     }
     days.sort_by_key(|d| d.order);
+    let days = days.into_iter().map(merge_duplicates).collect();
     CourseTable { class_name, days }
+}
+
+/// 学校页面会把同一门课按周分行列出（如 10周、14周、15周各一行）。
+/// 名称/节次/地点/教师 相同的课程合并为一块，周次取并集，周次文本重新压缩。
+fn merge_duplicates(mut day: CourseDay) -> CourseDay {
+    let mut merged: Vec<Course> = Vec::new();
+    for c in day.courses.drain(..) {
+        if let Some(existing) = merged
+            .iter_mut()
+            .find(|m| m.name == c.name && m.period == c.period && m.room == c.room && m.teacher == c.teacher)
+        {
+            for w in c.weeks {
+                if !existing.weeks.contains(&w) {
+                    existing.weeks.push(w);
+                }
+            }
+            existing.weeks.sort_unstable();
+        } else {
+            merged.push(c);
+        }
+    }
+    for c in &mut merged {
+        if !c.weeks.is_empty() {
+            c.weeks_text = compact_weeks_text(&c.weeks);
+        }
+    }
+    day.courses = merged;
+    day
+}
+
+/// [1,2,3,7,9,10] → "1-3,7,9-10"
+fn compact_weeks_text(weeks: &[u32]) -> String {
+    if weeks.is_empty() {
+        return String::new();
+    }
+    let mut out = String::new();
+    let mut i = 0;
+    while i < weeks.len() {
+        let start = weeks[i];
+        let mut end = start;
+        while i + 1 < weeks.len() && weeks[i + 1] == end + 1 {
+            i += 1;
+            end = weeks[i];
+        }
+        if !out.is_empty() {
+            out.push(',');
+        }
+        if start == end {
+            out.push_str(&start.to_string());
+        } else {
+            out.push_str(&format!("{start}-{end}"));
+        }
+        i += 1;
+    }
+    format!("{out}周")
 }
 
 /// 按周筛选某一天的课程；week=0 表示全部（命令层按周过滤时使用）
@@ -258,6 +314,24 @@ mod tests {
         assert!(d0.courses[1].weeks.len() == 16);
         let d1 = &table.days[1];
         assert_eq!(d1.courses[0].weeks, (7..=17).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn merge_week_rows() {
+        let html = r#"
+        [某班][星期一]
+        <table>
+          <tr><td>9-10节</td><td><ul><li>*大学生人文素养【10周；5603】</li></ul></td><td>张天</td></tr>
+          <tr><td>9-10节</td><td><ul><li>*大学生人文素养【14周；5603】</li></ul></td><td>张天</td></tr>
+          <tr><td>9-10节</td><td><ul><li>*大学生人文素养【15周；5603】</li></ul></td><td>张天</td></tr>
+        </table>
+        "#;
+        let table = parse_course_html(html);
+        assert_eq!(table.days[0].courses.len(), 1);
+        let c = &table.days[0].courses[0];
+        assert_eq!(c.name, "*大学生人文素养");
+        assert_eq!(c.weeks, vec![10, 14, 15]);
+        assert_eq!(c.weeks_text, "10,14-15周");
     }
 
     #[test]
