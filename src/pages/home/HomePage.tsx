@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ActionSheet, Button, Dialog, DotLoading, Picker, Toast } from 'antd-mobile'
 import PageShell from '@/components/PageShell'
 import CourseGrid from '@/pages/home/CourseGrid'
+import DayView from '@/pages/home/DayView'
 import { displayDays, gridPeriods, mergeManual } from '@/pages/home/course-model'
 import { api } from '@/api'
 import { storeApi, type CourseSelection } from '@/api/store'
@@ -27,6 +28,11 @@ export default function HomePage() {
   const [error, setError] = useState('')
   const [stale, setStale] = useState(false)
   const [manageVisible, setManageVisible] = useState(false)
+  const [viewMode, setViewMode] = useState<'day' | 'grid'>('day')
+  const [daySelected, setDaySelected] = useState(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  })
 
 
   const loadSeqRef = useRef(0)
@@ -175,15 +181,10 @@ export default function HomePage() {
     }
   }
 
-  return (
-    <PageShell
-      kicker="TIMETABLE"
-      title="课程表"
-      subtitle={
-        (selection?.className || table?.className || (auth ? '链接课表' : '班级课表')) +
-        (weekIndex ? ` · 第${weekIndex}周` : '')
-      }
-    >
+  const isDayView = bound && viewMode === 'day' && !!table && !!merged
+
+  const content = (
+    <>
       {!bound ? (
         <div className="app-card" style={{ textAlign: 'center', padding: '32px 20px' }}>
           <div style={{ fontSize: 40 }}>🗓️</div>
@@ -198,6 +199,16 @@ export default function HomePage() {
             从剪贴板读取课表链接
           </Button>
         </div>
+      ) : viewMode === 'day' && table && merged ? (
+        <DayView
+          table={merged}
+          className={selection?.className || table.className || '班级课表'}
+          realWeek={realWeek}
+          selected={daySelected}
+          onSelect={setDaySelected}
+          onOpenGrid={() => setViewMode('grid')}
+          onOpenManage={() => setManageVisible(true)}
+        />
       ) : (
         <>
           <div className="jm-weekbar">
@@ -238,6 +249,9 @@ export default function HomePage() {
               </button>
               <button className="jm-chip" onClick={() => load(true)} type="button">
                 {loading ? <DotLoading color="primary" /> : '刷新'}
+              </button>
+              <button className="jm-chip" onClick={() => setViewMode('day')} type="button">
+                日
               </button>
               <button className="jm-chip jm-chip--solid" onClick={() => setManageVisible(true)} type="button">
                 管理
@@ -287,6 +301,22 @@ export default function HomePage() {
         }}
         cancelText="取消"
       />
+    </>
+  )
+
+  if (isDayView) {
+    return <div className="app-page">{content}</div>
+  }
+  return (
+    <PageShell
+      kicker="TIMETABLE"
+      title="课程表"
+      subtitle={
+        (selection?.className || table?.className || (auth ? '链接课表' : '班级课表')) +
+        (weekIndex ? ` · 第${weekIndex}周` : '')
+      }
+    >
+      {content}
     </PageShell>
   )
 }
