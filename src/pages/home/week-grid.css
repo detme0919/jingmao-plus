@@ -11,24 +11,29 @@
   overflow: hidden;
 }
 
-.wk-bar {
+.wk-top {
+  padding: 2px 4px 10px;
+}
+
+.wk-top-row {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 8px 6px;
-  background: var(--jm-card);
-  border-radius: 22px;
-  box-shadow: 0 8px 28px rgba(16, 20, 30, 0.14);
-  margin-bottom: 12px;
+}
+
+.wk-top-sub {
+  margin: 0 0 0 10px;
+  font-size: 12px;
+  color: var(--jm-ink-3);
 }
 
 .wk-bar-title {
   border: none;
   background: transparent;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--jm-ink);
-  padding: 8px 10px;
+  padding: 6px 8px;
   min-width: 76px;
   text-align: center;
   display: flex;
@@ -37,8 +42,8 @@
 }
 
 .wk-bar-arrow {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border: none;
   background: transparent;
   color: var(--jm-ink-2);
@@ -60,8 +65,8 @@
 }
 
 .wk-bar-icon {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border: none;
   background: transparent;
   color: var(--jm-ink-2);
