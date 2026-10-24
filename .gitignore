@@ -1,16 +1,23 @@
+# Node
 node_modules/
 dist/
-unpackage/*
-!unpackage/res/
-unpackage/res/*
-!unpackage/res/icons/
-unpackage/res/icons/*
-!unpackage/res/icons/*.png
+
+# Rust / Tauri
+src-tauri/target/
+
+# Tauri Android 工程内的构建产物（gen/android 本体入库，便于维护自定义清单）
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/build/
+src-tauri/gen/android/app/build/
+src-tauri/gen/android/app/.cxx/
+src-tauri/gen/android/local.properties
+src-tauri/gen/android/.idea/
+
+# 旧 uni-app 遗留
 .hbuilderx/
-.zcode/
-.vscode/
-.idea/
 .gradle/
+
+# 安全与隐私
 *.log
 *.har
 .env
@@ -21,8 +28,15 @@ unpackage/res/icons/*
 *.jks
 *.p12
 *.pfx
+
+# 系统/编辑器
+.tmp/
 *.tmp
 *.bak
 Thumbs.db
 desktop.ini
 .DS_Store
+.zcode/
+.vscode/
+.idea/
+.vite/

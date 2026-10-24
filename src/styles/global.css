@@ -1,0 +1,154 @@
+/*
+ * 经贸+ 设计 tokens（Tauri 重构版 · 新视觉）
+ * 品牌色通过 data-accent 切换；暗色模式通过 data-scheme="dark" 启用（本期先浅色）
+ */
+:root {
+  --jm-radius-card: 16px;
+  --jm-radius-btn: 12px;
+  --jm-page-pad: 16px;
+
+  --jm-bg: #f5f6f8;
+  --jm-card: #ffffff;
+  --jm-ink: #1a1c22;
+  --jm-ink-2: #5c6572;
+  --jm-ink-3: #9aa2b1;
+  --jm-line: #edeef2;
+  --jm-danger: #e5484d;
+  --jm-ok: #30a46c;
+
+  --jm-shadow-card: 0 1px 2px rgba(16, 20, 30, 0.04), 0 8px 24px rgba(16, 20, 30, 0.05);
+  --jm-tabbar-height: 52px;
+}
+
+:root[data-accent='indigo'] {
+  --jm-brand: #4f46e5;
+  --jm-brand-strong: #4338ca;
+  --jm-brand-soft: rgba(79, 70, 229, 0.08);
+  --jm-brand-tint: rgba(79, 70, 229, 0.14);
+}
+:root[data-accent='teal'] {
+  --jm-brand: #0d9488;
+  --jm-brand-strong: #0f766e;
+  --jm-brand-soft: rgba(13, 148, 136, 0.08);
+  --jm-brand-tint: rgba(13, 148, 136, 0.14);
+}
+:root[data-accent='violet'] {
+  --jm-brand: #7c3aed;
+  --jm-brand-strong: #6d28d9;
+  --jm-brand-soft: rgba(124, 58, 237, 0.08);
+  --jm-brand-tint: rgba(124, 58, 237, 0.14);
+}
+:root[data-accent='orange'] {
+  --jm-brand: #ea580c;
+  --jm-brand-strong: #c2410c;
+  --jm-brand-soft: rgba(234, 88, 12, 0.08);
+  --jm-brand-tint: rgba(234, 88, 12, 0.14);
+}
+:root[data-accent='rose'] {
+  --jm-brand: #e11d48;
+  --jm-brand-strong: #be123c;
+  --jm-brand-soft: rgba(225, 29, 72, 0.08);
+  --jm-brand-tint: rgba(225, 29, 72, 0.14);
+}
+
+/* antd-mobile 主题接入 */
+:root {
+  --adm-color-primary: var(--jm-brand);
+  --adm-color-text: var(--jm-ink);
+  --adm-color-background: var(--jm-bg);
+  --adm-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--jm-bg);
+  color: var(--jm-ink);
+  font-family: var(--adm-font-family);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+#root {
+  min-height: 100%;
+}
+
+.app-page {
+  min-height: 100vh;
+  padding-bottom: calc(var(--jm-tabbar-height) + env(safe-area-inset-bottom) + 16px);
+}
+
+.app-card {
+  background: var(--jm-card);
+  border-radius: var(--jm-radius-card);
+  box-shadow: var(--jm-shadow-card);
+  padding: 16px;
+}
+
+/* 轻量标题区 */
+.jm-header {
+  padding: calc(env(safe-area-inset-top) + 20px) var(--jm-page-pad) 12px;
+}
+
+.jm-header-kicker {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--jm-ink-3);
+}
+
+.jm-header-title {
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--jm-ink);
+}
+
+.jm-header-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--jm-ink-2);
+}
+
+.jm-page-body {
+  padding: 0 var(--jm-page-pad);
+}
+
+.jm-card {
+  border-radius: var(--jm-radius-card);
+  box-shadow: var(--jm-shadow-card);
+}
+
+.jm-card-list {
+  border-radius: var(--jm-radius-card);
+  overflow: hidden;
+  box-shadow: var(--jm-shadow-card);
+  --adm-list-item-padding-left: 16px;
+  --adm-list-item-padding-right: 16px;
+}
+
+/* 底部 TabBar */
+.app-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.adm-tabbar {
+  height: var(--jm-tabbar-height);
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 仅对学校明文 HTTP 域名放行，其余域名仍强制 HTTPS -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">henetc.edu.cn</domain>
+        <domain includeSubdomains="true">hnjmxy.cn</domain>
+    </domain-config>
+</network-security-config>

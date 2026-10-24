@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"主窗口与登录窗口的默认能力","local":true,"windows":["main","login"],"permissions":["core:default","core:window:default","core:webview:default","core:event:default","core:app:default"]}}
