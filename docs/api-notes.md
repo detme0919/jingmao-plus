@@ -157,9 +157,7 @@ http://id.henetc.edu.cn/user_center/core/login/unifyAuthLoginCallback
 
 ### 3.5 相关实现
 
-- 登录地址构造：`src/config/school.js` → `buildLoginUrl()`
-- WebView 登录与 token 捕获：`src/pages/webview/webview.vue`
-- token 解析与存储：`src/utils/link.js`
+- 登录地址构造与 token 捕获：`src-tauri/src/config.rs` / `cas.rs`（旧版 `src/config/school.js`、`webview.vue`，对照表见 §11）
 
 ---
 
@@ -285,7 +283,7 @@ POST /core/user/config/getList
 | 记录列表 | `src/pages/tool/leave/leave.vue` |
 | 离校申请 | `src/pages/tool/leave/apply.vue` |
 | 申请详情 | `src/pages/tool/leave/detail.vue` |
-| 凭证解析/存储 | `src/utils/link.js` |
+| 凭证解析/存储 | `src-tauri/src/commands.rs`（旧版 `src/utils/link.js`） |
 
 ---
 
@@ -411,9 +409,8 @@ pid=yyzx&aid=catch&iBeaconstr=&position=113.796248,34.800624&token=<token>&idnum
 
 - `token_expire_time` 优先作为过期时间；缺失时按保存时间 +24 小时判断
 - App 勾选「记住密码」后，用本地保存的账号密码在 token 失效时静默重新登录
-- 账号密码只做固定密钥的 XOR 混淆，**不是加密**
-- 共用设备不建议勾选「记住密码」；手机被 root 或备份可能读取本地数据
-- openid 优先复用课表绑定的 wxid，否则生成一个稳定的本地值
+- 现行 App：密码以明文保存在应用私有目录（Android 沙箱内），**不是加密**；共用设备不建议保存
+- openid 首次登录时生成并固定保存（`o` + 27 位随机串），之后复用
 
 ### 5.6 教职工管理端
 
@@ -426,7 +423,7 @@ pid=yyzx&aid=catch&iBeaconstr=&position=113.796248,34.800624&token=<token>&idnum
 
 | 功能 | 文件 |
 | --- | --- |
-| 登录/凭证/打卡接口 | `src/utils/kq.js` |
+| 登录/凭证/打卡接口 | `src-tauri/src/kq.rs`（旧版 `src/utils/kq.js`） |
 | 原生打卡页 | `src/pages/tool/kq/kq.vue` |
 | 每日静默续期 | `src/App.vue` → `refreshKqDaily()` |
 
@@ -687,7 +684,7 @@ http://weixin.henetc.edu.cn/userreg_student.aspx
   - 保存到本机 `jm_ac_room`、`jm_ac_amount`
   - 「下一步」：确认房间号和金额后拉起微信；金额不会自动带入微信
   - 「查看学校缴费页」：带 `fillRoom` 参数打开 WebView
-- WebView 页：`src/pages/webview/webview.vue`
+- 学校原生页面内嵌：`src/pages/school/SchoolPage.tsx`（旧版 `webview.vue`）
   - 当内嵌页 URL 匹配 `StudentRoom.aspx` 时，注入脚本：
     - 找到 `#tb_room`
     - 填入房间号
@@ -724,7 +721,7 @@ http://weixin.henetc.edu.cn/userreg_student.aspx
 | `jm_register_mode` | 凭证使用方式 | 低 | `login` / `link` |
 | `jm_person` | 个人信息缓存 | 高 | 姓名、学号、学院、头像 |
 | `jm_kq_auth` | 考勤 token | 高 | 约 24 小时 |
-| `jm_kq_cred` | 考勤账号密码 | 高 | XOR 混淆，非加密 |
+| `jm_kq_cred` | 考勤账号密码 | 高 | 明文保存于应用私有目录，非加密 |
 | `jm_kq_openid` | 考勤 openid | 中 | 登录接口需要 |
 | `jm_course_selection` | 院系/班级 | 低 | 课表查询 |
 | `jm_course_auth` | 课表链接/wxid | 中 | 链接兜底 |
@@ -782,7 +779,7 @@ http://weixin.henetc.edu.cn/userreg_student.aspx
 ## 10. 隐私与安全
 
 - 仓库不包含任何真实姓名、学号、手机号、身份证号、头像 key、openid 或 token
-- 统一认证密码不保存；考勤密码仅在用户主动勾选时保存，且只是简单混淆
+- 统一认证密码不落盘；考勤密码在统一认证登录成功后自动保存到应用私有目录（明文、非加密），用于自动登录，可在打卡页「解绑」清除
 - 缴费链接由用户从微信复制，仅保存在本机；上传或转发会泄露个人身份
 - 缴费抓包（HAR）包含姓名、学号、房间号、openid、token、订单号和微信支付参数，只能临时分析，不能提交到仓库或公开分享
 - `docs/api-notes.md` 属于校内接口笔记，公开仓库前请评估是否设为私有或移除
@@ -816,4 +813,4 @@ http://weixin.henetc.edu.cn/userreg_student.aspx
 
 ---
 
-*最后更新：2026-10-24*
+*最后更新：2026-10-30*
