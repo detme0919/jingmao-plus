@@ -308,3 +308,52 @@
   display: flex;
   gap: 10px;
 }
+
+/* 次级按钮 / 底部双按钮 */
+.jm-ghost-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 16px;
+  border: 1px solid var(--jm-brand);
+  border-radius: var(--jm-radius-btn);
+  background: var(--jm-card);
+  color: var(--jm-brand);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.jm-punch-card .jm-ghost-btn {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.jm-bottom-bar--row {
+  display: flex;
+  gap: 10px;
+}
+
+.jm-bottom-bar--row .jm-ghost-btn {
+  flex: 0 0 38%;
+}
+
+.jm-bottom-bar--row .jm-primary-btn {
+  flex: 1;
+}
+
+/* 内嵌学校原生界面 */
+.school-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--jm-bg);
+}
+
+.school-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}

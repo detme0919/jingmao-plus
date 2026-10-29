@@ -100,3 +100,4 @@ export interface ManualCourse {
 export interface RegisterLink extends TokenRecord {
   ok: boolean
 }
+

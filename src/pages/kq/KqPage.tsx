@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Button, Dialog, Input, Switch, Toast } from 'antd-mobile'
+import { useNavigate } from 'react-router-dom'
 import SubPage from '@/components/SubPage'
 import { api } from '@/api'
 import type { KqProfile, KqRecord } from '@/types'
 
 /** 打卡考勤：独立账号登录（Rust 直连）、定位打卡、今日记录 */
 export default function KqPage() {
+  const navigate = useNavigate()
   const [authed, setAuthed] = useState<boolean | null>(null)
   const [profile, setProfile] = useState<KqProfile | null>(null)
   const [records, setRecords] = useState<KqRecord[]>([])
@@ -63,7 +65,7 @@ export default function KqPage() {
     setPunching(true)
     try {
       const r = await api.kqPunch()
-      Toast.show({ content: '打卡成功' })
+      Toast.show({ content: r?.mode ? `打卡成功（${r.mode}）` : '打卡成功' })
       setRecords(await api.kqToday())
       void r
     } catch (e) {
@@ -82,6 +84,8 @@ export default function KqPage() {
       setPunching(false)
     }
   }
+
+  const openOfficialPage = () => navigate('/school?target=kq')
 
   const unbind = async () => {
     const r = await Dialog.confirm({
@@ -150,8 +154,12 @@ export default function KqPage() {
               {punching ? '定位中…' : '立即打卡'}
             </button>
             <div className="jm-punch-tip">
-              打卡使用手机定位（GCJ-02），请确保系统定位服务和「经贸+」的定位权限（精确位置）均已开启。
+              优先使用教室蓝牙信标精准定位（自动识别教学楼），无信标时自动改用 GPS
+              定位；请确保蓝牙和定位权限均已开启。
             </div>
+            <button className="jm-ghost-btn" type="button" onClick={openOfficialPage}>
+              查看学校原生界面
+            </button>
           </div>
 
           <div className="jm-section-title" style={{ marginTop: 16 }}>
@@ -168,6 +176,7 @@ export default function KqPage() {
               </div>
             ))
           )}
+
         </>
       ) : null}
     </SubPage>

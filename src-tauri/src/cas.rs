@@ -10,9 +10,8 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use base64::engine::general_purpose::STANDARD as B64;
-use base64::Engine;
 
-use tauri::{AppHandle, Emitter, Manager, Url};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::config::{is_allowed_host, parse_login_token, unify_auth_login_url, PERREGISTER_URL};
 use crate::store::Store;
@@ -166,7 +165,6 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
     let (tx, rx) = mpsc::channel::<Result<String, String>>();
     {
         let window2 = window.clone();
-        let app2 = app.clone();
         std::thread::spawn(move || loop {
             std::thread::sleep(Duration::from_millis(1000));
             if !LOGIN_ACTIVE.load(Ordering::SeqCst) {

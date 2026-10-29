@@ -223,13 +223,13 @@ pub async fn current_week(auth: &KqAuth) -> Result<(u32, u32), String> {
 
 /// 打卡。position 为 GCJ-02 "经度,纬度"（由 geo 模块提供）。
 /// 注意：只在用户明确点击打卡时调用，测试中禁止触发。
-pub async fn punch(auth: &KqAuth, idnum: &str, position: &str) -> Result<String, String> {
+pub async fn punch(auth: &KqAuth, idnum: &str, position: &str, ibeaconstr: &str) -> Result<String, String> {
     expect_token(auth)?;
     let mut form = base_form();
     form.push(("token", auth.token.clone()));
     form.push(("idnum", idnum.to_string()));
     form.push(("position", position.to_string()));
-    form.push(("iBeaconstr", String::new()));
+    form.push(("iBeaconstr", ibeaconstr.to_string()));
     let body = post_kq("/core/syllabus/freeSignAjax", form).await?;
     if body.get("status").and_then(Value::as_i64) == Some(0) {
         Ok("打卡成功".into())

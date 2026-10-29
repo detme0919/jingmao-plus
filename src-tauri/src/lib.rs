@@ -1,3 +1,4 @@
+mod ble;
 mod cas;
 mod commands;
 mod config;
@@ -55,6 +56,9 @@ pub fn run() {
             commands::person_detail,
             commands::cas_open_login,
             commands::clipboard_detect_register_link,
+            commands::official_url,
+            ble::ble_start,
+            ble::ble_stop,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

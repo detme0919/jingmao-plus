@@ -381,12 +381,31 @@ POST /catch/core/syllabus/freeSignAjax
 | `token` | 考勤 token |
 | `idnum` | 学号，来自 `person/detailajax` |
 | `position` | `经度,纬度`，GCJ-02 |
-| `iBeaconstr` | 空字符串 |
+| `iBeaconstr` | 自由签到时为空字符串；蓝牙精准定位时为 JSON：`{"<uuid>&<major>&<minor>":rssi,...}`（键为信标三元组，值为该信标 RSSI，按信号强度排列；实测信标 UUID `17320508-0756-8877-2935-274463415059`、major=1、minor 区分教室），此时 `position` 为空字符串 |
 | `pid` / `aid` | `yyzx` / `catch` |
 
 - 返回 `{"status":0}` 表示成功；失败时读取 `errmsg`
 - 页面上的打卡按钮原本走原生桥接 `clockInForStudentID`，但服务端 HTTP 接口已通过抓包确认
+- 蓝牙模式实测（2026-10-28/29，五号教学楼）：`position=` 为空、`iBeaconstr` 携带 1-3 个学校信标（`17320508-0756-8877-2935-274463415059&1&<minor>`），返回 `{"status":0,"data":"<记录id>"}`，记录 `location_type=1`（教学楼精准定位）；无蓝牙时 `iBeaconstr=` 空、走 GPS，`location_type=3`（在校）
 - **调试时不要真实打卡**，避免产生考勤记录
+
+抓包实测（2026-10-22，微信小程序内嵌 H5）：
+
+```text
+pid=yyzx&aid=catch&iBeaconstr=&position=113.796248,34.800624&token=<token>&idnum=<idnum>
+→ {"status":0,"data":"69681480"}
+```
+
+- **自由签到不需要蓝牙数据**：`iBeaconstr` 为空字符串也能成功，服务端按 GPS 判定「在校(精准定位)」（`location_type=3`）。
+- 小程序里的 `bluetooth/bluetooth` 页面只用于**课堂签到 / 查寝**等带 `scheduleid`/`lessonid`/`signinid` 的签到类型（另有刷脸流程 `camera/camera`），与「立即打卡」不是同一条链路。
+- 因此 App 端不需要申请 `BLUETOOTH_*` 权限；只有接入课堂签到时才需要 BLE 扫描，且需要先抓到 `iBeaconstr` 非空的样本才能确定其格式。
+
+课堂签到 / 查寝链路（2026-10 静态资源分析）：
+
+- H5 的课程页只负责展示日程，点击签到时通过原生桥接完成：Android 调用 `window.android.helloApp("faceSignIn", {day, lessonid, scheduleid, scheduletype, signinid, id})`，iOS 调用 `webkit.messageHandlers.netAdapter`；微信小程序内则跳转原生页面 `../bluetooth/bluetooth` 或 `../camera/camera`。
+- 因此 **H5 的 JS 包里没有课堂签到的提交接口，也没有 `iBeaconstr` 的构造代码**，必须抓一份小程序课堂签到的请求才能确定。
+- App 端曾实现 iBeacon 扫描原型（Kotlin 解析 Apple 0x004C 广播的 UUID/Major/Minor/RSSI），因缺少课堂签到接口样本已暂时移除，避免申请无用的蓝牙权限。
+- 待办：拿到课堂签到抓包后，按实际参数补全提交接口（预计仍走 `/catch/core/syllabus/` 下某个 signin 接口，携带 `iBeaconstr`）。
 
 ### 5.5 凭证生命周期
 

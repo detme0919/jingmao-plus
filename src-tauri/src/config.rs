@@ -21,6 +21,9 @@ pub const COURSE_PAGE: &str = "http://weixin.henetc.edu.cn/student/bjkbcx.aspx?t
 #[allow(dead_code)]
 pub const COURSE_HOST: &str = "weixin.henetc.edu.cn"; // 课程链接识别用
 
+/// 学校考勤蓝牙信标的 iBeacon UUID（抓包实测，所有教室信标共用，Major=1）
+pub const SCHOOL_IBEACON_UUID: &str = "17320508-0756-8877-2935-274463415059";
+
 /// URL 白名单：仅允许学校域名（含子域）
 pub fn is_allowed_host(url: &str) -> bool {
     let lower = url.to_lowercase();

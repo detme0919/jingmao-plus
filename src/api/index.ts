@@ -69,6 +69,10 @@ function mockInvoke<T>(cmd: Cmd, args?: Args): Promise<T> {
           if (args?.key === 'course_selection') return resolve({ collegeValue: 'demo', classValue: 'demo-class', className: '预览·26网络3班', collegeName: '演示学院' } as T)
           if (args?.key === 'kq_auth') return resolve({ token: 'mock', savedAt: Date.now(), expiresAt: Date.now() + 864e5 } as T)
           return resolve(null as T)
+        case 'official_url':
+          return resolve((args?.target === 'leave'
+            ? 'https://smartlock.henetc.edu.cn/throughSchool/static/app/#/perregister'
+            : 'https://kq.henetc.edu.cn/catch/static/app/#/sign?aid=catch&pid=yyzx') as T)
         case 'course_fetch_colleges':
           return resolve([{ value: '01', label: '信息学院' }, { value: '02', label: '会计学院' }] as T)
         case 'course_fetch_classes':
@@ -143,7 +147,7 @@ export const api = {
   kqCurrentWeek: () => call<{ week: number; total: number; ok: boolean }>('kq_current_week'),
   kqLogout: () => call<void>('kq_logout'),
   kqSavedCred: () => call<{ remember: boolean; username: string | null }>('kq_saved_cred'),
-  kqPunch: () => call<{ position: string }>('kq_punch'),
+  kqPunch: () => call<{ mode: string }>('kq_punch'),
 
   // 出校登记
   leaveList: (status: string, page: number) => call<LeavePage>('leave_list', { status, page }),
@@ -157,6 +161,9 @@ export const api = {
       trafficWay: p.trafficWay,
       destination: p.destination
     }),
+
+  // 学校原生页面地址（用于内嵌 WebView）
+  officialUrl: (target: 'kq' | 'leave') => call<string>('official_url', { target }),
 
   // 个人信息与登录
   personDetail: () => call<Person>('person_detail'),

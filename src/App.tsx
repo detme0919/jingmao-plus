@@ -14,6 +14,7 @@ import LeaveApplyPage from '@/pages/leave/LeaveApplyPage'
 import LeaveDetailPage from '@/pages/leave/LeaveDetailPage'
 import KqPage from '@/pages/kq/KqPage'
 import AboutPage from '@/pages/about/AboutPage'
+import SchoolPage from '@/pages/school/SchoolPage'
 
 const TABS = [
   { key: '/', title: '课表', icon: CalendarIcon },
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/leave/detail/:id" element={<LeaveDetailPage />} />
         <Route path="/kq" element={<KqPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/school" element={<SchoolPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

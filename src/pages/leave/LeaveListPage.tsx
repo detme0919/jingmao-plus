@@ -142,7 +142,10 @@ export default function LeaveListPage() {
         </PullToRefresh>
       )}
 
-      <div className="jm-bottom-bar">
+      <div className="jm-bottom-bar jm-bottom-bar--row">
+        <button className="jm-ghost-btn" type="button" onClick={() => navigate('/school?target=leave')}>
+          学校原生界面
+        </button>
         <button className="jm-primary-btn" type="button" onClick={goApply}>
           发起离校申请
         </button>

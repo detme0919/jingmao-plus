@@ -11,14 +11,17 @@ const dayStr = (offsetDays: number) => {
   const d = new Date(Date.now() + offsetDays * 86400000)
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
-const nowTime = () => {
-  const d = new Date()
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 const toMinutes = (t: string) => {
   const [h, m] = t.split(':').map(Number)
   return (h || 0) * 60 + (m || 0)
 }
+/** 当前时刻的分钟数（0-1439） */
+const nowMinutes = () => {
+  const d = new Date()
+  return d.getHours() * 60 + d.getMinutes()
+}
+/** 分钟数 → "HH:mm" */
+const hm = (mins: number) => `${pad(Math.floor(mins / 60) % 24)}:${pad(mins % 60)}`
 
 /** 离校申请：时间校验 + 提交（提交是真实操作，需用户明确确认） */
 export default function LeaveApplyPage() {
@@ -37,24 +40,24 @@ export default function LeaveApplyPage() {
       .leaveConfig()
       .then((conf) => {
         setConfig(conf)
-        const advance = conf.advanceDays || 0
-        const tooLate = toMinutes(conf.inSchoolTime) - (toMinutes(nowTime()) + 1) < 60
-        const useTomorrow = advance >= 1 && tooLate
-        const day = dayStr(useTomorrow ? 1 : 0)
-        setDate(day)
-        setStartTime(useTomorrow ? conf.outSchoolTime : clampStart(nowTime(), conf))
+        const outMin = toMinutes(conf.outSchoolTime)
+        const inMin = toMinutes(conf.inSchoolTime)
+        // 默认离校时间至少是「下一分钟」：当前分钟提交时已经过去，学校会拒绝
+        let startMin = Math.max(nowMinutes() + 1, outMin)
+        startMin = Math.min(startMin, 23 * 60 + 59)
+        const canTomorrow = (conf.advanceDays || 0) >= 1
+        const useTomorrow = canTomorrow && startMin + 60 > inMin
+        setDate(dayStr(useTomorrow ? 1 : 0))
+        setStartTime(useTomorrow ? conf.outSchoolTime : hm(startMin))
         setEndTime(conf.inSchoolTime)
       })
       .catch((e) => {
         Toast.show({ content: String(e) })
-        const day = dayStr(0)
-        setDate(day)
-        setStartTime('06:30')
+        setDate(dayStr(0))
+        setStartTime(hm(Math.min(nowMinutes() + 1, 23 * 60 + 59)))
         setEndTime('22:00')
       })
   }, [])
-
-  const clampStart = (t: string, conf: LeaveConfig) => (t < conf.outSchoolTime ? conf.outSchoolTime : t)
 
   const validate = (): string => {
     if (!date || !startTime || !endTime) return '请选择完整的离校和返校时间'
@@ -62,7 +65,9 @@ export default function LeaveApplyPage() {
     const start = new Date(`${date} ${startTime}`.replace(/-/g, '/')).getTime()
     const end = new Date(`${date} ${endTime}`.replace(/-/g, '/')).getTime()
     if (end - start < 3600000) return '离校、返校时间需相差一个小时以上'
-    if (start < Date.now() - 5 * 60000) return '离校时间不能早于当前时间'
+    if (date === dayStr(0) && toMinutes(startTime) <= nowMinutes()) {
+      return '离校时间需晚于当前时间，请选择下一分钟或更晚'
+    }
     if (config && startTime < config.outSchoolTime) return `最早 ${config.outSchoolTime} 后可离校`
     if (config && endTime > config.inSchoolTime) return `最晚 ${config.inSchoolTime} 前需返校`
     if (!reason.trim()) return '请输入外出事由'
@@ -81,7 +86,15 @@ export default function LeaveApplyPage() {
     }
     const r = await Dialog.confirm({
       title: '确认提交',
-      content: `离校：${date} ${startTime}<br/>返校：${date} ${endTime}<br/>交通：${TRAFFIC_WAYS[trafficIdx]}`,
+      content: (
+        <div>
+          离校：{date} {startTime}
+          <br />
+          返校：{date} {endTime}
+          <br />
+          交通：{TRAFFIC_WAYS[trafficIdx]}
+        </div>
+      ),
       confirmText: '提交',
       cancelText: '再看看'
     })
@@ -104,10 +117,9 @@ export default function LeaveApplyPage() {
     }
   }
 
-  const timePicker = useMemo(
-    () => Array.from({ length: 24 * 4 }, (_, i) => `${pad(Math.floor(i / 4))}:${pad((i % 4) * 15)}`),
-    []
-  )
+  // 小时 / 分钟两列，可选到任意一分钟（不再限制 15 分钟一档）
+  const hourCol = useMemo(() => Array.from({ length: 24 }, (_, h) => pad(h)), [])
+  const minuteCol = useMemo(() => Array.from({ length: 60 }, (_, m) => pad(m)), [])
 
   return (
     <SubPage title="离校申请">
@@ -122,7 +134,17 @@ export default function LeaveApplyPage() {
           value={date ? new Date(date) : undefined}
           min={new Date()}
           max={new Date(Date.now() + 7 * 86400000)}
-          onConfirm={(v) => setDate(dayStr(Math.round((v.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000)))}
+          onConfirm={(v) => {
+            const picked = dayStr(Math.round((v.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000))
+            setDate(picked)
+            // 切回今天时，若原离校时间已过，自动顺延到下一分钟
+            if (picked === dayStr(0)) {
+              const minStart = Math.min(23 * 60 + 59, Math.max(nowMinutes() + 1, config ? toMinutes(config.outSchoolTime) : 0))
+              if (toMinutes(startTime) <= nowMinutes() || startTime < (config?.outSchoolTime ?? '00:00')) {
+                setStartTime(hm(minStart))
+              }
+            }
+          }}
         >
           {(item, actions) => (
             <div className="jm-picker-value" onClick={() => actions.open()}>
@@ -137,9 +159,9 @@ export default function LeaveApplyPage() {
           <div style={{ flex: 1 }}>
             <div className="jm-field-label">离校时间</div>
             <Picker
-              columns={[timePicker]}
-              value={[startTime]}
-              onConfirm={(v) => setStartTime(String(v[0]))}
+              columns={[hourCol, minuteCol]}
+              value={(startTime || '00:00').split(':')}
+              onConfirm={(v) => setStartTime(`${v[0]}:${v[1]}`)}
             >
               {(_, actions) => (
                 <div className="jm-picker-value" onClick={() => actions.open()}>
@@ -151,9 +173,9 @@ export default function LeaveApplyPage() {
           <div style={{ flex: 1 }}>
             <div className="jm-field-label">返校时间</div>
             <Picker
-              columns={[timePicker]}
-              value={[endTime]}
-              onConfirm={(v) => setEndTime(String(v[0]))}
+              columns={[hourCol, minuteCol]}
+              value={(endTime || '00:00').split(':')}
+              onConfirm={(v) => setEndTime(`${v[0]}:${v[1]}`)}
             >
               {(_, actions) => (
                 <div className="jm-picker-value" onClick={() => actions.open()}>

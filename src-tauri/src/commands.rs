@@ -215,9 +215,16 @@ pub async fn kq_punch(app: AppHandle) -> Result<Value, String> {
     if profile.idnum.is_empty() {
         return Err("考勤个人信息缺少学号，无法打卡".into());
     }
-    let position = crate::geo_device::locate_gcj02(&app).await?;
-    crate::kq::punch(&auth, &profile.idnum, &position).await?;
-    Ok(json!({"position": position}))
+    // 蓝牙信标优先（学校「教学楼精准定位」）；无信标/无权限时回退 GPS
+    let (position, ibeaconstr, mode) = match crate::ble::scan_ibeaconstr(&app, 5000).await {
+        Ok(Some(s)) => (String::new(), s, "蓝牙信标"),
+        _ => {
+            let pos = crate::geo_device::locate_gcj02(&app).await?;
+            (pos, String::new(), "GPS")
+        }
+    };
+    crate::kq::punch(&auth, &profile.idnum, &position, &ibeaconstr).await?;
+    Ok(json!({"mode": mode}))
 }
 
 // ---------- 出校登记 ----------
@@ -370,4 +377,40 @@ fn extract_any_param(url: &str, key: &str) -> Option<String> {
 
 fn now_ms() -> i64 {
     chrono::Utc::now().timestamp_millis()
+}
+
+// ---------- 学校原生界面地址（内嵌 WebView 使用） ----------
+
+#[tauri::command]
+pub fn official_url(app: AppHandle, target: String) -> Result<String, String> {
+    let store = app.state::<Store>();
+    match target.as_str() {
+        "kq" => {
+            let token = store.get("kq_auth")?.and_then(|v| {
+                let expired = v
+                    .get("expiresAt")
+                    .and_then(Value::as_i64)
+                    .map(|e| e <= now_ms())
+                    .unwrap_or(false);
+                if expired {
+                    None
+                } else {
+                    v.get("token").and_then(Value::as_str).map(|s| s.to_string())
+                }
+            });
+            Ok(match token {
+                Some(t) => format!("{}&token={}", crate::config::KQ_SIGN_PAGE, t),
+                None => crate::config::KQ_SIGN_PAGE.to_string(),
+            })
+        }
+        "leave" => {
+            // 内嵌页面统一走 https，避免混合内容被 WebView 拦截
+            let base = crate::config::PERREGISTER_URL.replace("http://", "https://");
+            Ok(match leave_token(&store) {
+                Ok(t) => format!("{}?token={}&expire=86400", base, t),
+                Err(_) => base,
+            })
+        }
+        _ => Err("未知的页面".into()),
+    }
 }
