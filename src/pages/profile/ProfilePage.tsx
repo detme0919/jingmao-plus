@@ -51,7 +51,7 @@ export default function ProfilePage() {
   const logout = async () => {
     const r = await Dialog.confirm({
       title: '退出登录',
-      content: '将清除统一认证登录状态。已保存的登记链接、课程表等数据不会被清除。',
+      content: '将清除统一认证登录状态，已保存的课表不受影响。',
       confirmText: '退出',
       cancelText: '取消'
     })
@@ -83,7 +83,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <PageShell kicker="MY" title="我的" subtitle="登录状态、外观与数据管理">
+    <PageShell kicker="MY" title="我的">
       <div className="jm-profile-card">
         <img className="jm-avatar" src={person?.avatar || '/school-logo.png'} alt="头像" />
         <div className="jm-profile-body">
@@ -99,7 +99,7 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : (
-            <div className="jm-profile-sub">登录学校统一认证，同步头像与个人信息</div>
+            <div className="jm-profile-sub">登录后同步头像与个人信息</div>
           )}
         </div>
         {loggedIn ? (
@@ -108,7 +108,7 @@ export default function ProfilePage() {
           </Button>
         ) : (
           <Button size="small" color="primary" onClick={login}>
-            去登录
+            登录
           </Button>
         )}
       </div>
@@ -149,7 +149,7 @@ export default function ProfilePage() {
           <span className="jm-cell-icon">🔗</span>
           <div className="jm-cell-body">
             <div className="jm-cell-label">清除已保存的链接</div>
-            <div className="jm-cell-sub">仅删除本机保存的登记链接</div>
+            <div className="jm-cell-sub">仅删除登记链接</div>
           </div>
           <span className="jm-cell-arrow">›</span>
         </div>
@@ -169,14 +169,12 @@ export default function ProfilePage() {
           <span className="jm-cell-icon">ℹ️</span>
           <div className="jm-cell-body">
             <div className="jm-cell-label">关于经贸+</div>
-            <div className="jm-cell-sub">个人作品与使用说明</div>
           </div>
           <span className="jm-cell-value">{version ? `v${version}` : ''}</span>
           <span className="jm-cell-arrow">›</span>
         </div>
       </div>
 
-      <div className="jm-footer">河南经贸职业学院 · 个人校园工具</div>
     </PageShell>
   )
 }

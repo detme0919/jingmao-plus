@@ -59,7 +59,7 @@ export default function ToolkitPage() {
   const greeting = person?.name ? `你好，${person.name}` : '你好，同学'
 
   return (
-    <PageShell kicker="TOOLKIT" title="工具箱" subtitle={`${greeting} · 把常用的事集中在一个入口`}>
+    <PageShell kicker="TOOLKIT" title="工具箱" subtitle={greeting}>
       {clipLink ? (
         <div className="jm-clip-tip">
           <div className="jm-clip-icon">🔗</div>
@@ -95,10 +95,8 @@ export default function ToolkitPage() {
       <div className="jm-service-card" onClick={() => navigate('/leave')}>
         <div className="jm-service-icon">🚪</div>
         <div className="jm-service-body">
-          <div className="jm-service-title">
-            出校登记 <span className="jm-service-tag">登记</span>
-          </div>
-          <div className="jm-service-desc">查看记录，发起离校申请</div>
+          <div className="jm-service-title">出校登记</div>
+          <div className="jm-service-desc">离校申请与记录</div>
         </div>
         <div className="jm-service-go">→</div>
       </div>
@@ -106,17 +104,15 @@ export default function ToolkitPage() {
       <div className="jm-service-card" onClick={() => navigate('/kq')}>
         <div className="jm-service-icon jm-service-icon--kq">🕒</div>
         <div className="jm-service-body">
-          <div className="jm-service-title">
-            打卡考勤 <span className="jm-service-tag">考勤</span>
-          </div>
-          <div className="jm-service-desc">打卡与签到记录</div>
+          <div className="jm-service-title">打卡考勤</div>
+          <div className="jm-service-desc">定位打卡与签到记录</div>
         </div>
         <div className="jm-service-go">→</div>
       </div>
 
       {!person ? (
         <div className="jm-login-hint">
-          <span>统一认证登录后可查看出校登记与个人信息</span>
+          <span>登录后可查看出校登记与个人信息</span>
           <Button
             size="small"
             color="primary"
@@ -139,7 +135,6 @@ export default function ToolkitPage() {
         </div>
       ) : null}
 
-      <div className="jm-footer">经贸+ · 更多工具持续更新</div>
     </PageShell>
   )
 }

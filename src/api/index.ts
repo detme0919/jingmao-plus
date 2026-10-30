@@ -54,7 +54,7 @@ function mockInvoke<T>(cmd: Cmd, args?: Args): Promise<T> {
     setTimeout(() => {
       switch (cmd) {
         case 'app_info':
-          return resolve({ name: 'jingmao-plus', version: '0.3.0', school: '河南经贸职业学院' } as T)
+          return resolve({ name: 'jingmao-plus', version: '1.0.2', school: '河南经贸职业学院' } as T)
         case 'store_set':
         case 'store_clear_all':
         case 'kq_logout':
