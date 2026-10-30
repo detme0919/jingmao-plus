@@ -357,3 +357,9 @@
   border: 0;
   background: #fff;
 }
+
+.jm-record-type {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--jm-ink-3);
+}

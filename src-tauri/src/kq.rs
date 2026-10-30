@@ -27,6 +27,9 @@ pub struct KqProfile {
 pub struct KqRecord {
     pub time: String,
     pub title: String,
+    /// 签到类型名（如「定位点签到」「扫脸签到」）
+    #[serde(rename = "typeName")]
+    pub type_name: String,
     pub position: String,
     pub status: String,
 }
@@ -187,22 +190,33 @@ pub async fn today(auth: &KqAuth) -> Result<Vec<KqRecord>, String> {
         .unwrap_or_default();
     Ok(list
         .iter()
-        .map(|r| KqRecord {
-            time: r.get("signintime").and_then(Value::as_str).unwrap_or("").into(),
-            title: r
-                .get("title")
-                .or_else(|| r.get("signtypename"))
+        .map(|r| {
+            // 小程序展示的是 time_part（如「夜晚归寝」「9-10节课」「自由签到」），
+            // 而非 title（恒为「自由签到」）；缺失时回退 title
+            let title = r
+                .get("time_part")
                 .and_then(Value::as_str)
+                .filter(|s| !s.is_empty())
+                .or_else(|| r.get("title").and_then(Value::as_str))
                 .unwrap_or("")
-                .into(),
-            position: r.get("position").and_then(Value::as_str).unwrap_or("").into(),
-            status: r
-                .get("status")
-                .map(|s| match s {
-                    Value::String(x) => x.clone(),
-                    other => other.to_string(),
-                })
-                .unwrap_or_default(),
+                .into();
+            KqRecord {
+                time: r.get("signintime").and_then(Value::as_str).unwrap_or("").into(),
+                title,
+                type_name: r
+                    .get("signtypename")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .into(),
+                position: r.get("position").and_then(Value::as_str).unwrap_or("").into(),
+                status: r
+                    .get("status")
+                    .map(|s| match s {
+                        Value::String(x) => x.clone(),
+                        other => other.to_string(),
+                    })
+                    .unwrap_or_default(),
+            }
         })
         .collect())
 }

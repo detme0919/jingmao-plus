@@ -172,6 +172,7 @@ export default function KqPage() {
               <div key={i} className="jm-record-card">
                 <div className="jm-record-time">🕐 {r.time || '--'}</div>
                 <div className="jm-record-title">{r.title || '签到'}</div>
+                {r.typeName ? <div className="jm-record-type">{r.typeName}</div> : null}
                 {r.position ? <div className="jm-record-pos">{r.position}</div> : null}
               </div>
             ))

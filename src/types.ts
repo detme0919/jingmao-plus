@@ -43,6 +43,7 @@ export interface KqProfile {
 export interface KqRecord {
   time: string
   title: string
+  typeName?: string
   position: string
   status: string
 }
