@@ -1,6 +1,6 @@
 [package]
 name = "jingmao-plus"
-version = "1.0.1"
+version = "1.0.2"
 description = "经贸+ · 校园工具箱（河南经贸职业学院）"
 authors = ["detme0919"]
 edition = "2021"
