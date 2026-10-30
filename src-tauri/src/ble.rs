@@ -4,11 +4,15 @@
 //! 打卡时若扫描到学校信标，按官方格式组装 iBeaconstr 并将 position 置空；
 //! 无信标/无权限时回退 GPS 定位。
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
+
+/// 本次进程内蓝牙权限被拒后跳过扫描，避免每次打卡都等待
+static BLE_SKIPPED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Beacon {
@@ -60,6 +64,7 @@ async fn call_start(app: &AppHandle) -> Result<i32, String> {
                 .map_err(|e| e.to_string())?;
             value.i().map_err(|e| e.to_string())
         })();
+        let _ = env.exception_clear();
         let _ = tx.send(res);
     })?;
     tauri::async_runtime::spawn_blocking(move || rx.recv_timeout(Duration::from_secs(10)))
@@ -81,6 +86,7 @@ async fn call_is_scanning(app: &AppHandle) -> Result<bool, String> {
                 .map_err(|e| e.to_string())?;
             value.z().map_err(|e| e.to_string())
         })();
+        let _ = env.exception_clear();
         let _ = tx.send(res);
     })?;
     tauri::async_runtime::spawn_blocking(move || rx.recv_timeout(Duration::from_secs(5)))
@@ -105,6 +111,7 @@ async fn call_stop(app: &AppHandle) -> Result<Vec<Beacon>, String> {
             let text: String = env.get_string(&jstr).map_err(|e| e.to_string())?.into();
             Ok(text)
         })();
+        let _ = env.exception_clear();
         let _ = tx.send(res);
     })?;
     let json = tauri::async_runtime::spawn_blocking(move || rx.recv_timeout(Duration::from_secs(10)))
@@ -123,15 +130,19 @@ pub async fn start_scan(app: &AppHandle) -> Result<i32, String> {
     }
     #[cfg(target_os = "android")]
     {
+        if BLE_SKIPPED.load(Ordering::SeqCst) {
+            return Ok(2);
+        }
         let status = call_start(app).await?;
         if status == 1 {
             // 已弹出系统权限框：等待用户授权，Kotlin 侧授权后会自动开始扫描
-            for _ in 0..60 {
+            for _ in 0..20 {
                 tokio::time::sleep(Duration::from_millis(500)).await;
                 if call_is_scanning(app).await.unwrap_or(false) {
                     return Ok(0);
                 }
             }
+            BLE_SKIPPED.store(true, Ordering::SeqCst);
             return Err("未获得蓝牙权限，请在系统设置中允许「经贸+」使用附近的设备".into());
         }
         Ok(status)

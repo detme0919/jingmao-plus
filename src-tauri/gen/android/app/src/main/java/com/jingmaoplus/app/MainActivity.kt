@@ -27,4 +27,14 @@ class MainActivity : TauriActivity() {
       WindowInsetsCompat.CONSUMED
     }
   }
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray
+  ) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    if (requestCode == BeaconScanner.REQ_CODE) {
+      BeaconScanner.onPermissionResult()
+    }
+  }
 }
