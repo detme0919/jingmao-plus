@@ -24,6 +24,7 @@
 9. [错误与兼容性](#9-错误与兼容性)
 10. [隐私与安全](#10-隐私与安全)
 11. [参考实现](#11-参考实现)
+12. [学生请假（ehall）](#12-学生请假ehall)
 
 ---
 
@@ -813,4 +814,90 @@ http://weixin.henetc.edu.cn/userreg_student.aspx
 
 ---
 
-*最后更新：2026-10-30*
+## 12. 学生请假（ehall）
+
+> 应用入口：`http://ehall.henetc.edu.cn/xsfw/sys/swmxsqjapp/*default/index.do`（网上办事大厅「学生请假」，金智 xsfw 框架）。
+> 2026-10-31 抓包实测。
+
+### 12.1 认证与会话
+
+ehall 与统一认证共用 `auth.henetc.edu.cn/GGSCASServer` CAS，登录链路：
+
+```
+GET  应用入口（未登录）
+  → 302 /amp-auth-adapter/login?service=<应用地址>          # 金智 App 认证适配器
+  → 302 /GGSCASServer/login?service=...loginSuccess?sessionToken=<uuid>
+  → POST fm1 表单（见下）
+  → 302 .../amp-auth-adapter/loginSuccess?sessionToken=...
+  → 302 应用入口（此时已带 ehall 会话 Cookie）
+```
+
+**真实密码校验不在 fm1 表单里**，而是提交前的 `POST /GGSCASServer/Login/checkLogin.do`：
+
+- fm1 表单字段：`lt`、`execution`、`_eventId=submit`、`username=<人员工号 rygh>`、`captcha`、`rememberMe`。
+  **密码输入框没有 name 属性，不参与提交**；`username` 提交的是预检返回的工号（隐藏域 `id=userBh`）。
+- 预检请求体格式（学校 `encryption.js` 的「DES 加密」，已逆向）：
+
+  ```
+  token = MD5(_key + _uuid + stime)            # hex
+  _wd   = _key                                 # 32 位 hex，即 MD5(encodeURIComponent(inner))
+  _wf   = DES-ECB-PKCS7(inner, key=8字节).hex  # 密钥取 _wd 的第 [10,5,31,2,19,22,14,28] 位字符
+  inner = {"token":"<_uuid 32hex>","timeStamp":<stime 毫秒>,"data":"<base64(JSON)>"}
+  JSON  = {"username":"","password":"","verifycode":"","dlfs":"","rememberme":true}
+  ```
+
+  服务端只校验 20 分钟时间窗（`|now - timeStamp| ≤ 1200000ms`）与 token 完整性，`stime` 用当前毫秒即可。
+  响应体为同结构 `{"token","_wd","_wf"}`，用响应自己的 `_wd` 同法解密，`data` 字段 base64 解码即业务 JSON。
+
+- 预检结果码（学校前端常量 `(x + 2022) * 2022`）：
+  `12182166` 成功（附 `rygh`）；`8134506/8136528` 账号或密码错误；`8138550/8140572` 需要图形验证码；
+  `10156506` 账号未激活。
+- 会话 Cookie：CAS 侧 `TGC/CASTGC` + ehall 侧 `MOD_AMP_AUTH`（`/amp-auth-adapter`）与 `/xsfw` 的 `JSESSIONID`。
+
+### 12.2 请假接口（`/xsfw/sys/swmxsqjapp/`）
+
+统一约定：POST 表单参数 `data=<urlencoded JSON>`；GET 直接访问；返回 `{"code":"0","msg":"成功",...}`。
+
+| 接口 | 方法 | 说明 |
+| --- | --- | --- |
+| `MobileServiceStudentApply/getStudentLeaveRecords.do` | POST `data={}` | 请假记录列表，`data` 为数组 |
+| `MobileServiceStudentApply/getDictionaryOfLeaveType.do` | GET | 请假类型字典（病假/事假 × 离校/在校） |
+| `MobileServiceStudentApply/checkWhetherStudentCanApply.do` | POST `data={}` | `{"applicable":true}` 是否可申请 |
+| `modules/qjsq.do`（`*json=1`） | POST | 申请表单模型配置（emap 框架） |
+| `/xsfw/code/67dbb4e6-5283-4da2-ae0c-37414988b50b/QJXZ.do` | GET | 请假性质码表：1 因私 / 2 因公 |
+| `/xsfw/code/f3e46183-e0f7-4ee6-9161-df346f81b1fe.do` | GET | 审核状态码表 |
+
+记录字段（大写下划线，`*_DISPLAY` 为展示值）：
+
+| 字段 | 含义 | 样本 |
+| --- | --- | --- |
+| `SQBH` / `WID` | 申请编号 / 行 ID | `9ca1d26d…` |
+| `QJLX` / `QJLX_DISPLAY` | 请假类型 | `病假（离校）` |
+| `QJXZ` / `QJXZ_DISPLAY` | 请假性质 | `1` / `因私请假` |
+| `QJKSRQ` / `QJJSRQ` | 开始 / 结束日期 | `2026-10-17` |
+| `YL1` / `YL2` | 开始 / 结束时间（隐藏字段承载） | `21:40` / `23:59` |
+| `QJTS` | 请假天数 | `1.0` |
+| `QJSY` | 请假事由（≤3000 字） | |
+| `SJH` | 手机号 | |
+| `SHZT` / `SHZT_DISPLAY` | 审核状态 | `0` / `草稿` |
+| `THZT` | 退回状态（1=已退回） | `0` |
+| `XJZT` / `XJZT_DISPLAY` | 销假状态 | `0` / `未销假` |
+| `SQRQ` / `CZRQ` | 申请日期 / 操作日期 | `2026-10-17` / `Oct 17, 2026 9:38:57 PM` |
+| `ZMCL` | 证明材料附件 ID | `1792244351241261` |
+| `XN` / `XQ` | 学年 / 学期 | `2026` / `1` |
+
+### 12.3 申请提交（待抓包）
+
+表单模型 `yddxzxsqjsqbd`（申请）/ `yddxsqjxqbd`（详情），控件：QJLX、QJXZ、QJTS、QJSY、ZMCL（uploadmuiltimage 附件）、SJH。
+**保存/提交接口未在抓包中出现**（2026-10-31 抓包只到表单页打开），需补抓一次真实提交流程后接入。
+
+### 12.4 经贸+ 实现
+
+- `src-tauri/src/ehall.rs`：纯 Rust CAS 直登（`checkLogin.do` 加密复刻 + fm1 提交 + 会话验证），
+  会话缓存 25 分钟，接口失败自动重登一次；`qj_records` / `qj_can_apply` 命令。
+- 统一认证凭据：统一认证登录时另存 `cas_cred`（`kq_cred` 可能被打卡页手动登录覆盖为考勤密码，不作首选）。
+- 前端 `src/pages/qj/QjPage.tsx`：请假记录列表；发起申请经「学校原生界面」内嵌页（工具箱也保留入口）。
+
+---
+
+*最后更新：2026-10-31*

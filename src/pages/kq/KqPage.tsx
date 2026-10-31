@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Button, Dialog, Input, Switch, Toast } from 'antd-mobile'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { Button, Card, Dialog, ErrorBlock, Input, List, SpinLoading, Switch, Toast } from 'antd-mobile'
 import { useNavigate } from 'react-router-dom'
 import SubPage from '@/components/SubPage'
 import { api } from '@/api'
@@ -117,15 +117,15 @@ export default function KqPage() {
         ) : null
       }
     >
-      {authed === null && loading ? <div className="jm-tip">加载中…</div> : null}
+      {authed === null && loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+          <SpinLoading style={{ '--size': '28px' }} />
+        </div>
+      ) : null}
 
       {authed === false ? (
-        <div className="app-card" style={{ padding: 20 }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>考勤登录</div>
-          <div style={{ fontSize: 12, color: 'var(--jm-ink-2)', lineHeight: 1.7 }}>
-            使用学校考勤系统（签到小程序）的账号密码。统一认证密码不适用；密码不会上传到任何第三方服务器。
-          </div>
-          <div className="jm-field-label" style={{ marginTop: 16 }}>
+        <Card title="考勤登录" style={{ borderRadius: 'var(--jm-radius-card)' }}>
+          <div className="jm-field-label" style={{ marginTop: 4 }}>
             账号
           </div>
           <Input value={username} onChange={setUsername} placeholder="学号 / 考勤账号" clearable />
@@ -133,51 +133,76 @@ export default function KqPage() {
             密码
           </div>
           <Input type="password" value={password} onChange={setPassword} placeholder="密码" />
-          <div className="jm-remember-row">
-            <span style={{ fontSize: 13, color: 'var(--jm-ink-2)' }}>记住密码（仅保存在本机）</span>
-            <Switch checked={remember} onChange={setRemember} />
-          </div>
+          <List style={{ marginTop: 8, borderRadius: 10, overflow: 'hidden' }}>
+            <List.Item extra={<Switch checked={remember} onChange={setRemember} />}>
+              <span style={{ fontSize: 13 }}>记住密码（仅保存在本机）</span>
+            </List.Item>
+          </List>
           <Button block color="primary" size="large" style={{ marginTop: 12 }} loading={logging} onClick={login}>
             登录
           </Button>
-        </div>
+        </Card>
       ) : null}
 
       {authed ? (
         <>
-          <div className="app-card jm-punch-card">
-            <div className="jm-punch-user">
-              <div className="jm-punch-name">{profile?.name || '已登录'}</div>
-              <div className="jm-punch-class">{[profile?.academy, profile?.className].filter(Boolean).join(' · ')}</div>
-            </div>
-            <button className="jm-punch-btn" type="button" disabled={punching} onClick={punch}>
-              {punching ? '定位中…' : '立即打卡'}
-            </button>
-            <div className="jm-punch-tip">
-              优先使用教室蓝牙信标精准定位（自动识别教学楼），无信标时自动改用 GPS
-              定位；请确保蓝牙和定位权限均已开启。
-            </div>
-            <button className="jm-ghost-btn" type="button" onClick={openOfficialPage}>
-              查看学校原生界面
-            </button>
-          </div>
-
-          <div className="jm-section-title" style={{ marginTop: 16 }}>
-            今日签到
-          </div>
-          {records.length === 0 ? (
-            <div className="jm-tip">今天还没有签到记录</div>
-          ) : (
-            records.map((r, i) => (
-              <div key={i} className="jm-record-card">
-                <div className="jm-record-time">🕐 {r.time || '--'}</div>
-                <div className="jm-record-title">{r.title || '签到'}</div>
-                {r.typeName ? <div className="jm-record-type">{r.typeName}</div> : null}
-                {r.position ? <div className="jm-record-pos">{r.position}</div> : null}
+          <Card style={{ borderRadius: 'var(--jm-radius-card)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 16 }}>{profile?.name || '已登录'}</div>
+                <div style={{ marginTop: 2, fontSize: 12, color: 'var(--jm-ink-2)' }}>
+                  {[profile?.academy, profile?.className].filter(Boolean).join(' · ')}
+                </div>
               </div>
-            ))
-          )}
+            </div>
+            <Button
+              block
+              color="primary"
+              size="large"
+              style={{ marginTop: 14 }}
+              loading={punching}
+              onClick={punch}
+            >
+              {punching ? '定位中…' : '立即打卡'}
+            </Button>
+            <Button
+              block
+              color="default"
+              fill="outline"
+              style={{ marginTop: 12 }}
+              onClick={openOfficialPage}
+            >
+              查看完整打卡记录
+            </Button>
+          </Card>
 
+          {records.length === 0 ? (
+            <ErrorBlock
+              status="empty"
+              title="今天还没有签到记录"
+              style={{ '--image-height': '56px' } as CSSProperties}
+            />
+          ) : (
+          <List
+            header="今日签到"
+            style={{ marginTop: 14, borderRadius: 'var(--jm-radius-card)', overflow: 'hidden' }}
+          >
+            {records.map((r, i) => (
+              <List.Item
+                key={i}
+                prefix="🕐"
+                description={
+                  <>
+                    {r.typeName ? <div>{r.typeName}</div> : null}
+                    {r.position ? <div style={{ color: 'var(--jm-ink-3)' }}>{r.position}</div> : null}
+                  </>
+                }
+              >
+                {r.title || '签到'} · {r.time || '--'}
+              </List.Item>
+            ))}
+          </List>
+          )}
         </>
       ) : null}
     </SubPage>

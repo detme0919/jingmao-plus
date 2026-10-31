@@ -10,6 +10,16 @@ pub const SMARTLOCK_PAGE: &str = "http://smartlock.henetc.edu.cn/throughSchool/s
 /// 统一认证入口：302 到 CAS，登录成功后回调并附带 token
 pub const UNIFY_AUTH_LOGIN: &str = "http://id.henetc.edu.cn/user_center/core/login/unifyAuthLogin";
 
+/// 学生请假（ehall 网上办事大厅）。经 auth.henetc.edu.cn CAS 登录，
+/// WebView 已有统一认证会话 Cookie 时可免登直达。
+pub const EHALL_QJ_URL: &str = "http://ehall.henetc.edu.cn/xsfw/sys/swmxsqjapp/*default/index.do";
+
+/// CAS 注销（强制重新显示登录表单、抓取凭据时使用）
+pub const CAS_LOGOUT_URL: &str = "http://auth.henetc.edu.cn/GGSCASServer/logout";
+
+/// CAS 登录页（强制登录时直接携带 service 进入，绕开统一入口重定向链）
+pub const CAS_LOGIN_URL: &str = "http://auth.henetc.edu.cn/GGSCASServer/login";
+
 /// 打卡考勤（独立账号体系）
 pub const KQ_API: &str = "https://kq.henetc.edu.cn/catch";
 pub const KQ_LOGIN_API: &str = "https://kq.henetc.edu.cn/ucenter/core/user/hnjmCatchWxLogin";

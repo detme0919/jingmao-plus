@@ -19,3 +19,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# 经贸+：wry 通过 JNI 调用的 Kotlin 方法在 Java 侧无引用，R8 会误删
+#（曾导致点击登录闪退 NoSuchMethodError），显式保留
+-keepclassmembers class com.jingmaoplus.app.RustWebView {
+    *;
+}
+-keepclassmembers class com.jingmaoplus.app.RustWebViewClient {
+    *;
+}

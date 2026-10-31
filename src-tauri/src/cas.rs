@@ -13,11 +13,15 @@ use base64::engine::general_purpose::STANDARD as B64;
 
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::config::{is_allowed_host, parse_login_token, unify_auth_login_url, PERREGISTER_URL};
+use crate::config::{
+    is_allowed_host, parse_login_token, unify_auth_login_url, EHALL_QJ_URL, PERREGISTER_URL,
+};
 use crate::store::Store;
 
 static LOGIN_ACTIVE: AtomicBool = AtomicBool::new(false);
 static CAPTURED_CREDS: Mutex<Option<(String, String)>> = Mutex::new(None);
+/// 最近一次已落盘的凭据（避免轮询期间重复写文件）
+static LAST_SAVED_CREDS: Mutex<Option<(String, String)>> = Mutex::new(None);
 const TIMEOUT_SECS: u64 = 360;
 
 /// 注入/eval 到页面的脚本：
@@ -70,13 +74,41 @@ pub const INIT_SCRIPT: &str = r#"
                 if (kbU && kbU.$preview && kbU.$preview.val && kbU.$preview.val().length > u.length) u = kbU.$preview.val();
               } catch (e) {}
             }
-            u = String(u).replace(/^s+|s+$/g, '');
+            u = String(u).replace(/^\s+|\s+$/g, '');
             p = String(p);
             if (!u || !p) return;
             if ((window.__jmBestLen || 0) >= p.length) return;
             window.__jmBestLen = p.length;
+            window.__jmSaveCreds(u, p);
+          } catch (e) {}
+        };
+        // 关键补丁：统一认证的真实校验走 jQuery $.ajax(checkLogin.do)，
+        // 调用那一刻输入框里一定是完整账号密码（虚拟键盘提交前会同步），
+        // 直接抓取，绕开虚拟键盘预览值不全的问题
+        if (window.jQuery && !window.__jmAjaxHook) {
+          window.__jmAjaxHook = true;
+          var origAjax = window.jQuery.ajax;
+          window.jQuery.ajax = function () {
+            try {
+              var opt = arguments[0];
+              var url = typeof opt === 'string' ? opt : (opt && opt.url) || '';
+              if (String(url).indexOf('checkLogin.do') >= 0) {
+                var unEl = document.querySelector('#username');
+                var pwEl = document.querySelector('input[type="password"]');
+                var au = String((unEl && unEl.value) || '').replace(/^\s+|\s+$/g, '');
+                var ap = String((pwEl && pwEl.value) || '');
+                if (au && ap) window.__jmSaveCreds(au, ap);
+              }
+            } catch (e) {}
+            return origAjax.apply(this, arguments);
+          };
+        }
+        window.__jmSaveCreds = function (u, p) {
+          try {
+            var payload = btoa(unescape(encodeURIComponent(u))) + '.' + btoa(unescape(encodeURIComponent(p)));
+            localStorage.setItem('__jmCreds', payload);
             var b = (location.href || '').split('#')[0].split('&jmc=')[0];
-            history.replaceState(null, '', b + (b.indexOf('?') < 0 ? '?' : '&') + 'jmc=' + btoa(unescape(encodeURIComponent(u))) + '.' + btoa(unescape(encodeURIComponent(p))));
+            history.replaceState(null, '', b + (b.indexOf('?') < 0 ? '?' : '&') + 'jmc=' + payload);
           } catch (e) {}
         };
         window.__jmGrab();
@@ -91,9 +123,15 @@ pub const INIT_SCRIPT: &str = r#"
         var t = extractToken();
         var u = location.href || '';
         if (t && u.indexOf('token=') < 0) {
-          // 把 token 写进 URL（replaceState 不刷新页面），Rust 轮询读取 WebView URL 即可捕获
+          // 把 token 写进 URL（replaceState 不刷新页面），Rust 轮询读取 WebView URL 即可捕获；
+          // 同时带上登录时抓到的凭据（jmc），保证一次轮询同时拿到 token 和账号密码
           var base = u.split('#')[0];
-          history.replaceState(null, '', base + (base.indexOf('?') < 0 ? '?' : '&') + 'token=' + t + (u.indexOf('#') >= 0 ? u.slice(u.indexOf('#')) : ''));
+          var extra = '';
+          try {
+            var c = localStorage.getItem('__jmCreds');
+            if (c && u.indexOf('jmc=') < 0) extra = '&jmc=' + c;
+          } catch (e) {}
+          history.replaceState(null, '', base + (base.indexOf('?') < 0 ? '?' : '&') + 'token=' + t + extra + (u.indexOf('#') >= 0 ? u.slice(u.indexOf('#')) : ''));
         }
       }
     } catch (e) { /* 忽略 */ }
@@ -121,6 +159,23 @@ fn take_captured_creds() -> Option<(String, String)> {
     CAPTURED_CREDS.lock().unwrap().take()
 }
 
+/// 是否已保存可用的统一认证凭据
+fn cas_cred_exists(app: &AppHandle) -> bool {
+    let store = app.state::<Store>();
+    match store.get("cas_cred") {
+        Ok(Some(v)) => {
+            let u = v
+                .get("username")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("")
+                .trim();
+            let p = v.get("pwd").and_then(serde_json::Value::as_str).unwrap_or("");
+            !u.is_empty() && !p.is_empty()
+        }
+        _ => false,
+    }
+}
+
 fn login_record(token: &str, base: &str) -> serde_json::Value {
     serde_json::json!({
         "token": token,
@@ -130,9 +185,24 @@ fn login_record(token: &str, base: &str) -> serde_json::Value {
     })
 }
 
+/// 强制登录（ehall service）完成时返回的记录：沿用已存 login_token，避免覆盖成空值
+fn existing_login_record(app: &AppHandle) -> serde_json::Value {
+    let store = app.state::<Store>();
+    store.get("login_token").ok().flatten().unwrap_or_else(|| {
+        serde_json::json!({
+            "token": "",
+            "url": "",
+            "expire": 0,
+            "savedAt": chrono::Utc::now().timestamp_millis()
+        })
+    })
+}
+
 /// 进入登录流程：主窗口跳转到统一认证入口，阻塞等待 token / 取消 / 超时。
 /// 返回 Ok(record) 时凭证已写入私有存储，且主窗口已导航回应用页面。
-pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
+/// force_form：清空 WebView 会话数据强制显示登录表单（用于抓取凭据）——
+/// 否则 CAS 检测到有效会话会直接放行，表单不出现，账号密码抓不到。
+pub async fn open_login(app: AppHandle, force_form: bool) -> Result<serde_json::Value, String> {
     if LOGIN_ACTIVE.load(Ordering::SeqCst) {
         return Err("__active__".into());
     }
@@ -148,23 +218,54 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
     let app_origin = app_url.split('#').next().unwrap_or("").to_string();
 
     CAPTURED_CREDS.lock().unwrap().take();
+    LAST_SAVED_CREDS.lock().unwrap().take();
     LOGIN_ACTIVE.store(true, Ordering::SeqCst);
-    let entry: String = unify_auth_login_url(PERREGISTER_URL);
-    let entry_url = match entry.parse() {
-        Ok(u) => u,
-        Err(e) => {
-            LOGIN_ACTIVE.store(false, Ordering::SeqCst);
-            return Err(format!("入口地址无效：{e}"));
+
+    let need_form = force_form || !cas_cred_exists(&app);
+    if need_form {
+        // 强制登录：注销 CAS 会话（TGT 失效后表单必然出现，否则 CAS 检测到有效
+        // 会话会直接放行，账号密码抓不到），然后**直接以 ehall 请假页为 service**
+        // 进入 CAS。不走统一入口（id.henetc.edu.cn）重定向链——实测注销后该链
+        // 会把 service 丢成空值，CAS 登录成功却无处发放票据，卡死在"登录成功"页。
+        // 注：clear_all_browsing_data 不可用——其 Kotlin 实现不清 Cookie，
+        // 且 JNI 调用的方法容易被 R8 当死代码裁掉（曾致闪退）。
+        if let Ok(u) = crate::config::CAS_LOGOUT_URL.parse::<tauri::Url>() {
+            let _ = window.navigate(u);
+            tokio::time::sleep(Duration::from_millis(2500)).await;
         }
-    };
-    if let Err(e) = window.navigate(entry_url) {
-        LOGIN_ACTIVE.store(false, Ordering::SeqCst);
-        return Err(format!("无法打开登录页面：{e}"));
+        let service = urlencoding::encode(EHALL_QJ_URL);
+        let direct = format!("{}?service={service}", crate::config::CAS_LOGIN_URL);
+        match direct.parse() {
+            Ok(u) => {
+                if let Err(e) = window.navigate(u) {
+                    LOGIN_ACTIVE.store(false, Ordering::SeqCst);
+                    return Err(format!("无法打开登录页面：{e}"));
+                }
+            }
+            Err(e) => {
+                LOGIN_ACTIVE.store(false, Ordering::SeqCst);
+                return Err(format!("登录地址无效：{e}"));
+            }
+        }
+    } else {
+        let entry: String = unify_auth_login_url(PERREGISTER_URL);
+        let entry_url = match entry.parse() {
+            Ok(u) => u,
+            Err(e) => {
+                LOGIN_ACTIVE.store(false, Ordering::SeqCst);
+                return Err(format!("入口地址无效：{e}"));
+            }
+        };
+        if let Err(e) = window.navigate(entry_url) {
+            LOGIN_ACTIVE.store(false, Ordering::SeqCst);
+            return Err(format!("无法打开登录页面：{e}"));
+        }
     }
 
     let (tx, rx) = mpsc::channel::<Result<String, String>>();
     {
         let window2 = window.clone();
+        let app2 = app.clone();
         std::thread::spawn(move || loop {
             std::thread::sleep(Duration::from_millis(1000));
             if !LOGIN_ACTIVE.load(Ordering::SeqCst) {
@@ -186,8 +287,25 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
                     if let Some(creds) = parse_captured_creds(&raw) {
                         // 始终记录最新输入：用户可能还在继续输入密码
                         println!("[cas] creds captured: username={} pwd_len={}", creds.0, creds.1.len());
+                        // 立即落盘：凭据在 checkLogin 提交时刻是完整且经服务器校验的，
+                        // 后续 token 环节即使失败（如卡在成功过渡页），请假直登也能用
+                        let mut last = LAST_SAVED_CREDS.lock().unwrap();
+                        if last.as_ref() != Some(&creds) {
+                            let store = app2.state::<Store>();
+                            let _ = store.set(
+                                "cas_cred",
+                                serde_json::json!({"username": creds.0, "pwd": creds.1}),
+                            );
+                            *last = Some(creds.clone());
+                        }
                         *CAPTURED_CREDS.lock().unwrap() = Some(creds);
                     }
+                }
+                // 强制登录流程完成标志：落到 ehall 应用页（CAS 登录成功并跳转到位）
+                if raw.contains("/xsfw/sys/") {
+                    println!("[cas] ehall page reached, forced login complete");
+                    let _ = tx.send(Ok(existing_login_record(&app2).to_string()));
+                    break;
                 }
                 if raw.contains("token=") {
                     if let Some((token, base)) = parse_login_token(&raw) {
@@ -234,6 +352,11 @@ pub async fn open_login(app: AppHandle) -> Result<serde_json::Value, String> {
 
                 // 自动登录打卡系统：账号密码与统一认证一致（失败静默，保留手动登录兜底）
                 if let Some((username, password)) = take_captured_creds() {
+                    // 保存统一认证凭据（供 ehall 请假等直连 CAS 的功能复用）
+                    let _ = store.set(
+                        "cas_cred",
+                        serde_json::json!({"username": username, "pwd": password}),
+                    );
                     let openid = match store.get("kq_openid") {
                         Ok(Some(v)) if v.is_string() => v.as_str().unwrap().to_string(),
                         _ => crate::store::generate_openid(),

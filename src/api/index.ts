@@ -7,6 +7,7 @@ import type {
   LeaveRecord,
   OptionItem,
   Person,
+  QjRecord,
   RegisterLink,
   TokenRecord
 } from '@/types'
@@ -54,7 +55,7 @@ function mockInvoke<T>(cmd: Cmd, args?: Args): Promise<T> {
     setTimeout(() => {
       switch (cmd) {
         case 'app_info':
-          return resolve({ name: 'jingmao-plus', version: '1.0.2', school: '河南经贸职业学院' } as T)
+          return resolve({ name: 'jingmao-plus', version: '1.0.3', school: '河南经贸职业学院' } as T)
         case 'store_set':
         case 'store_clear_all':
         case 'kq_logout':
@@ -72,7 +73,9 @@ function mockInvoke<T>(cmd: Cmd, args?: Args): Promise<T> {
         case 'official_url':
           return resolve((args?.target === 'leave'
             ? 'https://smartlock.henetc.edu.cn/throughSchool/static/app/#/perregister'
-            : 'https://kq.henetc.edu.cn/catch/static/app/#/sign?aid=catch&pid=yyzx') as T)
+            : args?.target === 'qj'
+              ? 'https://ehall.henetc.edu.cn/xsfw/sys/swmxsqjapp/*default/index.do'
+              : 'https://kq.henetc.edu.cn/catch/static/app/#/sign?aid=catch&pid=yyzx') as T)
         case 'course_fetch_colleges':
           return resolve([{ value: '01', label: '信息学院' }, { value: '02', label: '会计学院' }] as T)
         case 'course_fetch_classes':
@@ -104,6 +107,23 @@ function mockInvoke<T>(cmd: Cmd, args?: Args): Promise<T> {
           return resolve({ name: '预览同学', idnum: '0000', academy: '信息学院', specialty: '网络技术', className: '26网络3班', avatar: '' } as T)
         case 'clipboard_detect_register_link':
           return resolve({ ok: false } as T)
+        case 'qj_records':
+          return resolve([
+            {
+              sqbh: 'demo-1', leaveType: '病假（离校）', nature: '因私请假',
+              beginDate: day, endDate: day, beginTime: '08:00', endTime: '18:00', days: 1,
+              reason: '预览：去医院复诊', audit: '待审核', returned: false,
+              cancelStatus: '未销假', applyDate: day, year: '2026-2027学年', term: '第一学期'
+            },
+            {
+              sqbh: 'demo-2', leaveType: '事假（在校）', nature: '因私请假',
+              beginDate: day, endDate: day, beginTime: '14:00', endTime: '16:00', days: 0.5,
+              reason: '预览：校内办理手续', audit: '草稿', returned: false,
+              cancelStatus: '未销假', applyDate: day, year: '2026-2027学年', term: '第一学期'
+            }
+          ] as T)
+        case 'qj_can_apply':
+          return resolve(true as T)
         default:
           return reject(`浏览器预览不支持：${cmd}`)
       }
@@ -162,11 +182,15 @@ export const api = {
       destination: p.destination
     }),
 
+  // 学生请假（ehall）
+  qjRecords: () => call<QjRecord[]>('qj_records'),
+  qjCanApply: () => call<boolean>('qj_can_apply'),
+
   // 学校原生页面地址（用于内嵌 WebView）
-  officialUrl: (target: 'kq' | 'leave') => call<string>('official_url', { target }),
+  officialUrl: (target: 'kq' | 'leave' | 'qj') => call<string>('official_url', { target }),
 
   // 个人信息与登录
   personDetail: () => call<Person>('person_detail'),
-  casOpenLogin: () => call<TokenRecord>('cas_open_login'),
+  casOpenLogin: (force = false) => call<TokenRecord>('cas_open_login', { force }),
   clipboardDetectRegisterLink: () => call<RegisterLink>('clipboard_detect_register_link')
 }

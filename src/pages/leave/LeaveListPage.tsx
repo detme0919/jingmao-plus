@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
-import { InfiniteScroll, PullToRefresh, Toast } from 'antd-mobile'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Button, CapsuleTabs, ErrorBlock, InfiniteScroll, List, PullToRefresh, Tag, Toast } from 'antd-mobile'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import SubPage from '@/components/SubPage'
+import LiquidGlass from '@/components/LiquidGlass'
 import { api } from '@/api'
 import { isTokenExpired, storeApi } from '@/api/store'
 import type { LeaveRecord } from '@/types'
@@ -28,7 +29,11 @@ const FILTERS = [
   { key: '4', label: '超时' }
 ]
 
-/** 出校登记列表：状态筛选 + 下拉刷新 + 上拉分页 */
+/** 状态 → Tag 颜色 */
+export const statusColor = (cls: string): 'default' | 'warning' | 'success' | 'danger' =>
+  cls === 'warn' ? 'warning' : cls === 'ok' ? 'success' : cls === 'danger' ? 'danger' : 'default'
+
+/** 出校登记列表：状态筛选（CapsuleTabs）+ 下拉刷新 + 上拉分页 */
 export default function LeaveListPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
@@ -81,34 +86,21 @@ export default function LeaveListPage() {
   }
 
   return (
-    <SubPage
-      title="出校登记"
-      right={
-        <a className="jm-nav-action" onClick={goApply}>
-          发起申请
-        </a>
-      }
-    >
-      <div className="jm-chips">
+    <SubPage title="出校登记">
+      <div style={{ paddingBottom: 'calc(92px + max(var(--inset-bottom, 0px), 20px))' }}>
+      <CapsuleTabs activeKey={status} onChange={switchFilter} style={{ '--gap': '8px' } as CSSProperties}>
         {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            type="button"
-            className={`jm-chip ${(status || '') === f.key ? 'jm-chip--solid' : ''}`}
-            onClick={() => switchFilter(f.key)}
-          >
-            {f.label}
-          </button>
+          <CapsuleTabs.Tab title={f.label} key={f.key} />
         ))}
-      </div>
+      </CapsuleTabs>
 
       {error ? (
-        <div className="jm-tip jm-tip--error">
-          {error}
-          <a className="jm-retry" onClick={() => load(status, 1, false)}>
-            重试
-          </a>
-        </div>
+        <ErrorBlock
+          status="disconnected"
+          title="加载失败"
+          description={error}
+          style={{ '--image-height': '56px' } as CSSProperties}
+        />
       ) : (
         <PullToRefresh
           onRefresh={async () => {
@@ -116,23 +108,36 @@ export default function LeaveListPage() {
           }}
         >
           {records.length === 0 && !loading ? (
-            <div className="jm-tip">暂无登记记录{status ? '（当前筛选）' : ''}</div>
+            <ErrorBlock
+              status="empty"
+              title="暂无登记记录"
+              description={status ? '当前筛选下没有记录' : '去发起一次离校申请吧'}
+              style={{ '--image-height': '72px' } as CSSProperties}
+            />
           ) : null}
-          {records.map((r) => {
-            const st = LEAVE_STATUS[r.status] || { text: r.status || '-', cls: 'info' }
-            return (
-              <div key={r.id} className="jm-leave-card" onClick={() => navigate(`/leave/detail/${r.id}`)}>
-                <div className="jm-leave-head">
-                  <span className="jm-leave-time">{r.beginTime.slice(0, 16)} 出校</span>
-                  <span className={`jm-status jm-status--${st.cls}`}>{st.text}</span>
-                </div>
-                <div className="jm-leave-meta">
-                  {r.destination || '-'} · {trafficLabel(r.trafficWay)}
-                </div>
-                <div className="jm-leave-reason">{r.reason || '（无事由）'}</div>
-              </div>
-            )
-          })}
+          <List style={{ borderRadius: 'var(--jm-radius-card)', overflow: 'hidden' }}>
+            {records.map((r) => {
+              const st = LEAVE_STATUS[r.status] || { text: r.status || '-', cls: 'info' }
+              return (
+                <List.Item
+                  key={r.id}
+                  clickable
+                  onClick={() => navigate(`/leave/detail/${r.id}`)}
+                  extra={<Tag color={statusColor(st.cls)} fill="outline">{st.text}</Tag>}
+                  description={
+                    <>
+                      <div>
+                        {r.destination || '-'} · {trafficLabel(r.trafficWay)}
+                      </div>
+                      <div style={{ color: 'var(--jm-ink-3)' }}>{r.reason || '（无事由）'}</div>
+                    </>
+                  }
+                >
+                  {r.beginTime.slice(0, 16)} 出校
+                </List.Item>
+              )
+            })}
+          </List>
           <InfiniteScroll
             hasMore={page < totalPage && !error}
             loadMore={async () => {
@@ -141,15 +146,29 @@ export default function LeaveListPage() {
           />
         </PullToRefresh>
       )}
-
-      <div className="jm-bottom-bar jm-bottom-bar--row">
-        <button className="jm-ghost-btn" type="button" onClick={() => navigate('/school?target=leave')}>
-          学校原生界面
-        </button>
-        <button className="jm-primary-btn" type="button" onClick={goApply}>
-          发起离校申请
-        </button>
       </div>
+
+      <LiquidGlass className="leave-actions">
+        <Button
+          block
+          color="primary"
+          size="large"
+          style={{ flex: 1.4 }}
+          onClick={goApply}
+        >
+          发起离校申请
+        </Button>
+        <Button
+          block
+          color="default"
+          fill="outline"
+          size="large"
+          style={{ flex: 1 }}
+          onClick={() => navigate('/school?target=leave')}
+        >
+          原生界面
+        </Button>
+      </LiquidGlass>
     </SubPage>
   )
 }

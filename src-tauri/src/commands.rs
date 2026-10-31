@@ -318,8 +318,8 @@ pub async fn person_detail(app: AppHandle) -> Result<Value, String> {
 // ---------- 统一认证登录 ----------
 
 #[tauri::command]
-pub async fn cas_open_login(app: AppHandle) -> Result<Value, String> {
-    match crate::cas::open_login(app.clone()).await {
+pub async fn cas_open_login(app: AppHandle, force: Option<bool>) -> Result<Value, String> {
+    match crate::cas::open_login(app.clone(), force.unwrap_or(false)).await {
         Ok(record) => {
             let store = app.state::<Store>();
             store.set("login_token", record.clone())?;
@@ -411,6 +411,25 @@ pub fn official_url(app: AppHandle, target: String) -> Result<String, String> {
                 Err(_) => base,
             })
         }
+        "qj" => {
+            // 学生请假（ehall）：入口走 https，登录链路交给 CAS；
+            // WebView 已持有统一认证会话 Cookie 时免登直达
+            Ok(crate::config::EHALL_QJ_URL.replace("http://", "https://"))
+        }
         _ => Err("未知的页面".into()),
     }
+}
+
+// ---------- 学生请假（ehall 网上办事大厅，见 ehall.rs） ----------
+
+/// 请假记录列表（自动 CAS 直登，失败自动重登一次）
+#[tauri::command]
+pub async fn qj_records(app: AppHandle) -> Result<Vec<crate::ehall::QjRecord>, String> {
+    crate::ehall::records(&app).await
+}
+
+/// 是否允许发起请假申请
+#[tauri::command]
+pub async fn qj_can_apply(app: AppHandle) -> Result<bool, String> {
+    crate::ehall::can_apply(&app).await
 }

@@ -1,15 +1,11 @@
-/// 可切换的强调色（新版设计：品牌色只影响关键元素）
+/// 应用主题：河南经贸职业学院品牌蓝（固定）
 export const ACCENTS = [
-  { id: 'indigo', name: '靛蓝' },
-  { id: 'teal', name: '青绿' },
-  { id: 'violet', name: '紫罗兰' },
-  { id: 'orange', name: '活力橙' },
-  { id: 'rose', name: '玫红' }
+  { id: 'jmblue', name: '经贸蓝' }
 ] as const
 
 export type AccentId = (typeof ACCENTS)[number]['id']
 
-export const DEFAULT_ACCENT: AccentId = 'indigo'
+export const DEFAULT_ACCENT: AccentId = 'jmblue'
 
 export function isAccentId(v: string): v is AccentId {
   return ACCENTS.some((a) => a.id === v)

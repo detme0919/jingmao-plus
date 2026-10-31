@@ -58,6 +58,25 @@ export interface LeaveRecord {
   status: string
 }
 
+/** 学生请假记录（ehall swmxsqjapp，字段为 *_DISPLAY 展示值） */
+export interface QjRecord {
+  sqbh: string
+  leaveType: string
+  nature: string
+  beginDate: string
+  endDate: string
+  beginTime: string
+  endTime: string
+  days: number
+  reason: string
+  audit: string
+  returned: boolean
+  cancelStatus: string
+  applyDate: string
+  year: string
+  term: string
+}
+
 export interface LeavePage {
   list: LeaveRecord[]
   totalPage: number

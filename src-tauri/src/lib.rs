@@ -4,6 +4,7 @@ mod commands;
 mod config;
 mod course;
 mod course_parse;
+mod ehall;
 mod geo;
 mod geo_device;
 mod kq;
@@ -57,6 +58,8 @@ pub fn run() {
             commands::cas_open_login,
             commands::clipboard_detect_register_link,
             commands::official_url,
+            commands::qj_records,
+            commands::qj_can_apply,
             ble::ble_start,
             ble::ble_stop,
         ])

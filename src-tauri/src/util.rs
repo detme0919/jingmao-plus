@@ -2,13 +2,14 @@
 
 use regex::Regex;
 
+/// 移动端 UA（学校接口均按手机浏览器适配）
+pub const CLIENT_UA: &str = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) \
+     Chrome/120.0.0.0 Mobile Safari/537.36";
+
 /// 共享 reqwest 客户端（带移动端 UA；学校接口均为表单提交）
 pub fn client() -> reqwest::Client {
     reqwest::Client::builder()
-        .user_agent(
-            "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) \
-             Chrome/120.0.0.0 Mobile Safari/537.36",
-        )
+        .user_agent(CLIENT_UA)
         .connect_timeout(std::time::Duration::from_secs(15))
         .timeout(std::time::Duration::from_secs(20))
         .build()

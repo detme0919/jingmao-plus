@@ -18,6 +18,7 @@ pub struct Store {
 /// 允许写入的键（防止任意键写入）
 const KNOWN_KEYS: &[&str] = &[
     "login_token",     // 统一认证 token {token, expire, url, savedAt}
+    "cas_cred",       // 统一认证账号密码（ehall 请假等直登复用）
     "register_link",   // 登记链接 {url, token, expire, savedAt}
     "register_mode",   // 'login' | 'link'
     "person",          // 个人信息缓存

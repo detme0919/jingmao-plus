@@ -11,6 +11,7 @@ interface SubPageProps {
 
 export default function SubPage({ title, right, children }: SubPageProps) {
   const navigate = useNavigate()
+
   return (
     <div className="app-page app-page--sub">
       <NavBar
@@ -22,7 +23,8 @@ export default function SubPage({ title, right, children }: SubPageProps) {
             background: 'var(--jm-card)',
             borderBottom: '1px solid var(--jm-line)',
             '--adm-color-text': 'var(--jm-ink)',
-            '--height': '48px',
+            '--height': 'calc(48px + var(--inset-top, 0px))',
+            paddingTop: 'var(--inset-top, 0px)',
             position: 'sticky',
             top: 0,
             zIndex: 50

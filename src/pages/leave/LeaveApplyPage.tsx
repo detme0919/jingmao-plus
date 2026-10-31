@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, DatePicker, Dialog, Picker, TextArea, Toast } from 'antd-mobile'
+import { Button, DatePicker, Dialog, Input, Picker, TextArea, Toast } from 'antd-mobile'
 import SubPage from '@/components/SubPage'
 import { api } from '@/api'
 import type { LeaveConfig } from '@/types'
@@ -204,12 +204,12 @@ export default function LeaveApplyPage() {
         <div className="jm-field-label" style={{ marginTop: 16 }}>
           目的地
         </div>
-        <input
-          className="jm-input"
+        <Input
           value={destination}
-          onChange={(e) => setDestination(e.target.value)}
+          onChange={setDestination}
           placeholder="请输入目的地"
           maxLength={20}
+          clearable
         />
         <div className="jm-counter">{destination.length}/20</div>
 

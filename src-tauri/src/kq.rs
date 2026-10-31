@@ -230,8 +230,15 @@ pub async fn current_week(auth: &KqAuth) -> Result<(u32, u32), String> {
         return Err("当前周查询失败（考勤凭证无效）".into());
     }
     let data = body.get("data").cloned().unwrap_or(Value::Null);
-    let week = data.get("week").and_then(Value::as_i64).unwrap_or(0).max(0) as u32;
-    let total = data.get("weeknum").and_then(Value::as_i64).unwrap_or(20).max(20) as u32;
+    // 学校接口 week 可能是数字也可能是字符串（实测返回 "09"），做兼容解析
+  let week_num = |key: &str| -> i64 {
+    let v = data.get(key);
+    v.and_then(Value::as_i64)
+      .or_else(|| v.and_then(Value::as_str).and_then(|x| x.trim().parse::<i64>().ok()))
+      .unwrap_or(0)
+  };
+  let week = week_num("week").max(0) as u32;
+  let total = week_num("weeknum").max(20) as u32;
     Ok((week, total))
 }
 

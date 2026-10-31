@@ -60,31 +60,6 @@
   gap: 6px;
 }
 
-.jm-chip {
-  border: none;
-  padding: 7px 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  border-radius: 9px;
-  font-size: 13px;
-  color: var(--jm-ink-2);
-  background: var(--jm-bg);
-  display: flex;
-  align-items: center;
-}
-
-.jm-chip--brand {
-  color: var(--jm-brand);
-  background: var(--jm-brand-soft);
-  font-weight: 600;
-}
-
-.jm-chip--solid {
-  color: #fff;
-  background: var(--jm-brand);
-  font-weight: 600;
-}
-
 .jm-tip {
   padding: 40px 16px;
   text-align: center;

@@ -2,6 +2,7 @@ import { useEffect, type CSSProperties } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { TabBar } from 'antd-mobile'
 import { CalendarIcon, GridIcon, UserIcon } from '@/components/icons'
+import LiquidGlass from '@/components/LiquidGlass'
 import { useThemeStore } from '@/store/theme'
 import { applyAccent } from '@/store/theme'
 import HomePage from '@/pages/home/HomePage'
@@ -13,6 +14,9 @@ import LeaveListPage from '@/pages/leave/LeaveListPage'
 import LeaveApplyPage from '@/pages/leave/LeaveApplyPage'
 import LeaveDetailPage from '@/pages/leave/LeaveDetailPage'
 import KqPage from '@/pages/kq/KqPage'
+import QjPage from '@/pages/qj/QjPage'
+import SettingsPage from '@/pages/settings/SettingsPage'
+import DataManagePage from '@/pages/settings/DataManagePage'
 import AboutPage from '@/pages/about/AboutPage'
 import SchoolPage from '@/pages/school/SchoolPage'
 
@@ -47,20 +51,21 @@ export default function App() {
         <Route path="/leave/apply" element={<LeaveApplyPage />} />
         <Route path="/leave/detail/:id" element={<LeaveDetailPage />} />
         <Route path="/kq" element={<KqPage />} />
+        <Route path="/qj" element={<QjPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/data" element={<DataManagePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/school" element={<SchoolPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       {isTab ? (
-        <div className="app-tabbar">
+        <LiquidGlass visible className="lg-tabbar">
           <TabBar
             activeKey={location.pathname}
             onChange={(key) => navigate(key)}
             style={
               {
-                background: 'var(--jm-card)',
-                borderTop: '1px solid var(--jm-line)',
                 '--adm-color-primary': 'var(--jm-brand)'
               } as CSSProperties
             }
@@ -76,7 +81,7 @@ export default function App() {
               )
             })}
           </TabBar>
-        </div>
+        </LiquidGlass>
       ) : null}
     </div>
   )

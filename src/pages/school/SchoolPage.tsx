@@ -3,11 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { NavBar } from 'antd-mobile'
 import { api } from '@/api'
 
-/** 内嵌学校原生 H5（打卡 / 出校登记），不跳转外部浏览器 */
+/** 内嵌学校原生 H5（打卡 / 出校登记 / 学生请假），不跳转外部浏览器 */
 export default function SchoolPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const target = params.get('target') === 'leave' ? 'leave' : 'kq'
+  const rawTarget = params.get('target') ?? ''
+  const target = ['leave', 'qj'].includes(rawTarget) ? (rawTarget as 'leave' | 'qj') : 'kq'
   const [url, setUrl] = useState('')
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
@@ -44,13 +45,19 @@ export default function SchoolPage() {
             background: 'var(--jm-card)',
             borderBottom: '1px solid var(--jm-line)',
             '--adm-color-text': 'var(--jm-ink)',
-            '--height': '48px',
+            '--height': 'calc(48px + var(--inset-top, 0px))',
+            paddingTop: 'var(--inset-top, 0px)',
             flexShrink: 0
           } as CSSProperties
         }
       >
-        {target === 'kq' ? '学校打卡界面' : '学校出校登记'}
+        {target === 'kq' ? '学校打卡界面' : target === 'qj' ? '学生请假' : '学校出校登记'}
       </NavBar>
+      {target === 'qj' ? (
+        <div className="jm-tip" style={{ flexShrink: 0 }}>
+          首次使用如出现统一认证登录页，请在页面内登录；先在「我的」完成统一认证登录后即可免登直达。
+        </div>
+      ) : null}
       {error ? <div className="jm-tip jm-tip--error">{error}</div> : null}
       {url ? (
         <iframe

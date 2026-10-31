@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Dialog, Toast } from 'antd-mobile'
+import { Button, Card, Dialog, List, Toast } from 'antd-mobile'
 import PageShell from '@/components/PageShell'
 import { api } from '@/api'
 import { isTokenExpired, storeApi } from '@/api/store'
 import type { Person, RegisterLink } from '@/types'
 
-/** 工作台：登录态问候 + 服务入口 + 剪贴板链接检测 */
+/** 工具箱：登录态问候 + 服务入口（List）+ 剪贴板链接检测 */
 export default function ToolkitPage() {
   const navigate = useNavigate()
   const [person, setPerson] = useState<Person | null>(null)
@@ -59,14 +59,19 @@ export default function ToolkitPage() {
   const greeting = person?.name ? `你好，${person.name}` : '你好，同学'
 
   return (
-    <PageShell kicker="TOOLKIT" title="工具箱" subtitle={greeting}>
+    <PageShell title="工具箱" subtitle={greeting}>
       {clipLink ? (
-        <div className="jm-clip-tip">
-          <div className="jm-clip-icon">🔗</div>
-          <div className="jm-clip-text">剪贴板中有新的登记链接</div>
-          <div className="jm-clip-actions">
-            <button
-              className="jm-chip jm-chip--brand"
+        <Card style={{ borderRadius: 'var(--jm-radius-card)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ fontSize: 22 }}>🔗</div>
+            <div style={{ flex: 1, fontSize: 13, lineHeight: 1.6 }}>
+              <div style={{ fontWeight: 600 }}>剪贴板中有新的登记链接</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <Button
+              size="small"
+              color="primary"
               onClick={async () => {
                 await storeApi.setRegisterLink(clipLink)
                 await storeApi.setRegisterMode('link')
@@ -76,65 +81,80 @@ export default function ToolkitPage() {
               }}
             >
               保存
-            </button>
-            <button
-              className="jm-chip"
+            </Button>
+            <Button
+              size="small"
+              color="default"
+              fill="outline"
               onClick={() => {
                 setDismissed(clipLink.token)
                 setClipLink(null)
               }}
             >
               忽略
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       ) : null}
 
-      <div className="jm-section-title">常用服务</div>
-
-      <div className="jm-service-card" onClick={() => navigate('/leave')}>
-        <div className="jm-service-icon">🚪</div>
-        <div className="jm-service-body">
-          <div className="jm-service-title">出校登记</div>
-          <div className="jm-service-desc">离校申请与记录</div>
-        </div>
-        <div className="jm-service-go">→</div>
-      </div>
-
-      <div className="jm-service-card" onClick={() => navigate('/kq')}>
-        <div className="jm-service-icon jm-service-icon--kq">🕒</div>
-        <div className="jm-service-body">
-          <div className="jm-service-title">打卡考勤</div>
-          <div className="jm-service-desc">定位打卡与签到记录</div>
-        </div>
-        <div className="jm-service-go">→</div>
-      </div>
+      <List header="常用服务" style={{ marginTop: 14, borderRadius: 'var(--jm-radius-card)', overflow: 'hidden' }}>
+        <List.Item
+          prefix="🚪"
+          description="离校申请与记录"
+          arrow
+          clickable
+          onClick={() => navigate('/leave')}
+        >
+          出校登记
+        </List.Item>
+        <List.Item
+          prefix="🕒"
+          description="定位打卡与签到记录"
+          arrow
+          clickable
+          onClick={() => navigate('/kq')}
+        >
+          打卡考勤
+        </List.Item>
+        <List.Item
+          prefix="📝"
+          description="请假记录与申请进度"
+          arrow
+          clickable
+          onClick={() => navigate('/qj')}
+        >
+          学生请假
+        </List.Item>
+      </List>
 
       {!person ? (
-        <div className="jm-login-hint">
-          <span>登录后可查看出校登记与个人信息</span>
-          <Button
-            size="small"
-            color="primary"
-            fill="outline"
-            onClick={async () => {
-              try {
-                const record = await api.casOpenLogin()
-                await storeApi.setLoginToken(record)
-                Toast.show({ content: '登录成功' })
-                refresh()
-              } catch (e) {
-                const msg = String(e)
-                if (msg !== '__cancelled__' && msg !== '__active__')
-                  Dialog.alert({ title: '登录失败', content: msg })
-              }
-            }}
-          >
-            去登录
-          </Button>
-        </div>
+        <Card style={{ marginTop: 14, borderRadius: 'var(--jm-radius-card)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ flex: 1, fontSize: 13, color: 'var(--jm-ink-2)' }}>
+              登录后可查看出校登记与个人信息
+            </span>
+            <Button
+              size="small"
+              color="primary"
+              fill="outline"
+              onClick={async () => {
+                try {
+                  const record = await api.casOpenLogin()
+                  await storeApi.setLoginToken(record)
+                  Toast.show({ content: '登录成功' })
+                  refresh()
+                } catch (e) {
+                  const msg = String(e)
+                  if (msg !== '__cancelled__' && msg !== '__active__')
+                    Dialog.alert({ title: '登录失败', content: msg })
+                }
+              }}
+            >
+              去登录
+            </Button>
+          </div>
+        </Card>
       ) : null}
-
     </PageShell>
   )
 }

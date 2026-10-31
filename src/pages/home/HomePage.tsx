@@ -60,12 +60,15 @@ export default function HomePage() {
       cached.pv === 2
     if (cacheMatches && cached) {
       setTable(cached)
-      if (typeof cached.realWeek === 'number') setRealWeek(cached.realWeek)
-      if (typeof cached.currentWeek === 'number' && cached.currentWeek > 0) setWeekIndex(cached.currentWeek)
+      if (typeof cached.realWeek === 'number' && cached.realWeek > 0) {
+        setRealWeek(cached.realWeek)
+        setWeekIndex(cached.realWeek)
+      }
     }
 
     const lastRefresh = await storeApi.getLastRefresh()
-    if (!force && cacheMatches && lastRefresh === todayStr()) return
+    // 缓存必须带 realWeek 才可信（旧版缓存可能缺），否则强制重新拉取周次
+    if (!force && cacheMatches && lastRefresh === todayStr() && !!cached && typeof cached.realWeek === 'number' && cached.realWeek > 0) return
 
     const seq = ++loadSeqRef.current
     setLoading(true)
@@ -87,12 +90,9 @@ export default function HomePage() {
         setWeeksTotal(Math.max(20, wk.total))
       }
       if (wk.week > 0) {
-        const has = result.days.some((d) =>
-          d.courses.some((c) => !c.weeks?.length || c.weeks.includes(wk.week))
-        )
-        const nextWeek = wk.week > 0 && has ? wk.week : 0
-        setWeekIndex(nextWeek)
-        await storeApi.setCourseCache({ ...result, realWeek: wk.week, currentWeek: nextWeek })
+        // 无条件跟随当前周：当前周没课就显示空周，不回退「全部」混入其他周课程
+        setWeekIndex(wk.week)
+        await storeApi.setCourseCache({ ...result, realWeek: wk.week, currentWeek: wk.week })
       }
     } catch (e) {
       if (seq !== loadSeqRef.current) return
@@ -269,5 +269,5 @@ export default function HomePage() {
     </>
   )
 
-  return <div className="app-page">{content}</div>
+  return <div className="app-page jm-home">{content}</div>
 }
